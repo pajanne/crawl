@@ -1,0 +1,18 @@
+
+# 
+# connection details
+# 
+
+[Connection]
+host = localhost
+database = pathogens
+user = pathdb
+password = pathdb
+
+
+# 
+# Logging
+# 
+
+[Logging]
+path = /home/gv1/code/charpy/logs.txt
