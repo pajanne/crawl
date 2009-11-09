@@ -15,4 +15,4 @@ password = pathdb
 # 
 
 [Logging]
-path = /home/gv1/code/charpy/logs.txt
+path = /home/gv1/code/genlib/python/charpy/logs.txt

@@ -68,7 +68,7 @@ class WhatsNew(QueryProcessor):
         try:
             c = time.strptime(date,"%Y-%m-%d")
         except Exception, e:
-            print "date " + date
+            # print "date " + date
             se = ServerException("Invalid date: please supply a valid date markes in 'YYYY-MM-DD' format.", RopyServer.ERROR_CODES.INVALID_DATE)
             raise ServerException, se
 
