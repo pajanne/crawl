@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ $# != 1 ]; then
-  echo "./charpy test|run|export"
+if [ $# != 3 ]; then
+  echo "./charpy test|run|export -conf /path/to/conf/file.ini"
   exit 1
 fi
 
@@ -10,16 +10,15 @@ GENEDB_LIB_PATH=/home/gv1/code/genlib/python:/home/gv1/code/charpy
 
 export PYTHONPATH=$PYTHONPATH:$GENEDB_LIB_PATH
 
-
 case "$1" in
 test) 
-    python test/unit_tests.py
+    python src/unit_tests.py $@
     ;;
 run) 
-    python server/server.py
+    python src/server.py $@
     ;;
 export) 
-    python script/bulk_export.py
+    python src/bulk_export.py $@
     ;;
 *)
     echo "Unknown server command."
