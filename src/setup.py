@@ -41,6 +41,11 @@ except Exception, e:
     print "Could not set up the logging, is the path set in the conf file correct?"
     sys.exit(1)
 
+production = getArg("production", raiseOnEmpty = False)
+access_log = config.get('Logging', 'access_log')
+error_log = config.get('Logging', 'error_log')
+
+
 host=config.get('Connection', 'host')
 database=config.get('Connection', 'database')
 user=config.get('Connection', 'user')

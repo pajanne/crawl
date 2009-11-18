@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ $# != 3 ]; then
-  echo "charpy test|run|export -conf /path/to/conf/file.ini"
+if [ $# -le 3 ]; then
+  echo "charpy test|run|export -conf /path/to/conf/file.ini [(if run) -production True|False]"
   exit 1
 fi
 

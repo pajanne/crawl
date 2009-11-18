@@ -85,15 +85,26 @@ class OrganismController(RESTController):
     changes.exposed = True
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }
     
-    
+
+config = None
+if production == "True":
+    print "Going into production"
+    config = {
+        "environment": "production",
+        "server.socket_port": 6666,
+        "server.thread_pool": 10,
+        "log.screen": False,
+        "log.error_file": error_log,
+        "log.access_file": access_log
+    }
+
 
 # the object construction tree defines the URL paths
 root = Root()
 root.genes = FeatureController()
 root.organisms = OrganismController()
 
-
-RopyServer(root)
+RopyServer(root, config)
 
 
 
