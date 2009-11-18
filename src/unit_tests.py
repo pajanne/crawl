@@ -14,26 +14,18 @@ import sys
 import unittest
 
 
-from business.api import WhatsNew
+from api import WhatsNew
 from ropy.client import RopyClient, ServerReportedException
 from ropy.server import Formatter
 from ropy.util import LogConf
+from ropy.query import ConnectionFactory
 
-
-config = ConfigParser.ConfigParser()
-config.read(os.path.dirname(__file__) + '/../conf/config.ini')
-
-host=config.get('Connection', 'host')
-database=config.get('Connection', 'database')
-user=config.get('Connection', 'user')
-password=config.get('Connection', 'password')
-
-LogConf.logpath=config.get('Logging', 'path')
+from setup import *
 
 class BusinessTests(unittest.TestCase):
     
     def setUp(self):
-        self.whats_new = WhatsNew(host, database, user, password)
+        self.whats_new = WhatsNew(connectionFactory)
     
     def testAllChanged(self):
         since = "2009-06-01"
@@ -75,23 +67,45 @@ class BusinessTests(unittest.TestCase):
         formatter.formatTemplate('private_annotations.xml.tpl')
         formatter.formatJSON()
     
+    
     def testAllOrganisms(self):
         since = "2009-06-01"
         
         organism_list = self.whats_new.getAllOrganismsAndTaxonIDs()
+        
+        organismIDs = []
+        organismHash = {}
         for organism_details in organism_list:
-            organism_details["count"] = self.whats_new.countAllChangedFeaturesForOrganism(organism_details["organism_id"], since)
+            organism_details["count"] = 0
+            organismIDs.append(organism_details["organism_id"])
+            organismHash [organism_details["organism_id"]] = organism_details
+        
+        counts = self.whats_new.countAllChangedFeaturesForOrganisms(since, organismIDs)
+        
+        for count in counts:
+            organismID = str(count[0])
+            print organismID
+            org = organismHash[organismID]
+            org["count"] = count[1]
         
         data = {
             "response" : {
                 "name" : "genomes/changes",
                 "since" : since,
-                "results" : organism_list
+                "results" : organismHash.values()
             }
         }
         
         formatter = Formatter(data, os.path.dirname(__file__) + "/../tpl/")
-        formatter.formatJSON()
+        print formatter.formatTemplate('genomes_changed.xml.tpl')
+    
+    
+    def testCountAllOrganisms(self):
+        since = "2009-06-01"
+        organismIDs = [12, 14, 15, 20]
+        
+        result = self.whats_new.countAllChangedFeaturesForOrganisms(since, organismIDs)
+        print result
 
 class ClientServerTests(unittest.TestCase):
     
@@ -142,5 +156,5 @@ def main():
 
 
 if __name__ == '__main__':
-	unittest.main()
+	unittest.main(argv=['charpy'])
 

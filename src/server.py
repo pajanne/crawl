@@ -3,22 +3,11 @@ import os
 import ConfigParser
 
 # from business.api import ERROR_CODES
-from business.high_level_api import FeatureAPI, OrganismAPI
-from ropy.util import dolog, LogConf
+from high_level_api import FeatureAPI, OrganismAPI
 from ropy.server import RopyServer, RESTController, Root
+from ropy.query import ConnectionFactory
 
-
-config = ConfigParser.ConfigParser()
-config.read(os.path.dirname(__file__) + '/../conf/config.ini')
-
-host=config.get('Connection', 'host')
-database=config.get('Connection', 'database')
-user=config.get('Connection', 'user')
-password=config.get('Connection', 'password')
-
-LogConf.logpath=config.get('Logging', 'path')
-
-
+from setup import *
 
 class FeatureController(RESTController):
     """
@@ -27,7 +16,7 @@ class FeatureController(RESTController):
     
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-        self.api = FeatureAPI(host, database, user, password)
+        self.api = FeatureAPI(connectionFactory)
     
     def changes_xml(self, since, taxonomyID):
         return self.changes(since, taxonomyID)
@@ -46,6 +35,7 @@ class FeatureController(RESTController):
         data = self.api.changes(since, taxonomyID)
         return self.format(data, "changes");
     changes.exposed = True
+    changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID"  }
     
     
     def annotation_changes_json(self, taxonomyID):
@@ -64,7 +54,7 @@ class FeatureController(RESTController):
         data = self.api.annotation_changes(taxonomyID)
         return self.format(data, "private_annotations");
     annotation_changes.exposed = True
-    
+    annotation_changes.arguments = { "taxonomyID" : "the NCBI taxonomy ID"  }
     
     
     
@@ -76,7 +66,7 @@ class OrganismController(RESTController):
     
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-        self.api = OrganismAPI(host, database, user, password)
+        self.api = OrganismAPI(connectionFactory)
     
     def changes_json(self, since):
         return self.changes(since)
@@ -94,6 +84,7 @@ class OrganismController(RESTController):
         data = self.api.changes(since)
         return self.format(data, "genomes_changed");
     changes.exposed = True
+    changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }
     
     
 

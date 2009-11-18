@@ -15,27 +15,30 @@ or dictionaries.
 import os
 import sys
 import time
+import logging
 
 
 from ropy.query import QueryProcessor
-from ropy.util import dolog
 from ropy.server import RopyServer, ServerException
 
-
+logger = logging.getLogger("charpy")
 
 class WhatsNew(QueryProcessor):
     
-    def __init__(self, host, database, user, password):
-        super(WhatsNew, self).__init__(host, database, user, password)
+    def __init__(self, connectionFactory):
+        super(WhatsNew, self).__init__(connection=connectionFactory)
+        
         
         # reset the path to this the sql subfolder at the location class
-        self.setSQLFilePath(os.path.dirname(__file__) + "/sql/")
+        self.setSQLFilePath(os.path.dirname(__file__) + "/../sql/")
         
         self.addQueryFromFile("all_changed", "all_changed_features_for_organism.sql")
         self.addQueryFromFile("get_organism_from_taxon", "get_organism_id_from_taxon_id.sql")
         self.addQueryFromFile("get_all_privates_with_dates", "get_all_privates_with_dates.sql")
         self.addQueryFromFile("count_changed_features_organism", "count_changed_features_organism.sql")
         self.addQueryFromFile("get_all_organisms_and_taxon_ids", "get_all_organisms_and_taxon_ids.sql")
+        
+        self.addQueryFromFile("count_all_changed_features", "count_all_changed_features.sql")
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
         self.validateDate(date)
@@ -48,7 +51,7 @@ class WhatsNew(QueryProcessor):
             # return the first value of the first row... 
             return rows[0][0]
         except:
-            raise Exception("Could not find organism for taxonID " + taxonID)
+            raise ServerException("Could not find organism for taxonID " + taxonID, RopyServer.ERROR_CODES.DATA_NOT_FOUND)
     
     def getGenesWithPrivateAnnotationChanges(self, organism_id):
         return self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
@@ -57,8 +60,18 @@ class WhatsNew(QueryProcessor):
         self.validateDate(since)        
         rows = self.runQuery("count_changed_features_organism", (organism_id, since))
         count = rows[0][0]
-        dolog ( str(organism_id) + " - " + since + " - " + str(count) )
+        logger.debug ( str(organism_id) + " - " + since + " - " + str(count) )
         return count
+    
+    def countAllChangedFeaturesForOrganisms(self, since, organismIDs):
+        ids = tuple (organismIDs)
+        rows = self.runQuery("count_all_changed_features", (since, ids) );
+        
+        # result = {}
+        #         for row in rows:
+        #             result[row[0]] = row[1]
+        #         
+        return rows
     
     def getAllOrganismsAndTaxonIDs(self):
         return self.runQueryAndMakeDictionary("get_all_organisms_and_taxon_ids")

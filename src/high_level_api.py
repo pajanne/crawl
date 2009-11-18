@@ -13,23 +13,24 @@ the results back in a complex json-like structure.
 
 import sys
 import os
-
+import logging
 from api import WhatsNew
-from ropy.util import dolog
+
+logger = logging.getLogger("charpy")
 
 class FeatureAPI(object):
     
-    def __init__(self, host, database, user, password):
-        self.api = WhatsNew(host, database, user, password)
+    def __init__(self, connectionFactory):
+        self.api = WhatsNew(connectionFactory)
     
     def changes(self, since, taxonID):
-        dolog(since)
-        dolog(taxonID)
+        logger.debug(since)
+        logger.debug(taxonID)
         organism_id = self.api.getOrganismFromTaxon(taxonID)
         changed_features = self.api.getAllChangedFeaturesForOrganism(since, organism_id)
         data = {
             "response" : {
-                "name" : "genome/changes",
+                "name" : "genes/changes",
                 "taxonID" : taxonID,
                 "count" : len(changed_features),
                 "since" : since,
@@ -46,7 +47,7 @@ class FeatureAPI(object):
         
         data = {
             "response" : {
-                "name" : "genome/annotation_changes",
+                "name" : "genes/annotation_changes",
                 "taxonomyID" : taxonID,
                 "count" : len(rows),
                 "results" : rows
@@ -59,23 +60,37 @@ class FeatureAPI(object):
 
 class OrganismAPI(object):
     
-    def __init__(self, host, database, user, password):
-        self.api = WhatsNew(host, database, user, password)
+    def __init__(self, connectionFactory):
+        self.api = WhatsNew(connectionFactory)
     
     def changes(self, since):
-        dolog(since)
+        logger.debug(since)
         
         organism_list = self.api.getAllOrganismsAndTaxonIDs()
+        
+        organismIDs = []
+        organismHash = {}
         for organism_details in organism_list:
-            organism_details["count"] = self.api.countAllChangedFeaturesForOrganism(organism_details["organism_id"], since)
+            organism_details["count"] = 0
+            organismIDs.append(organism_details["organism_id"])
+            organismHash [organism_details["organism_id"]] = organism_details
+        
+        counts = self.api.countAllChangedFeaturesForOrganisms(since, organismIDs)
+        
+        for count in counts:
+            organismID = str(count[0])
+            print organismID
+            org = organismHash[organismID]
+            org["count"] = count[1]
         
         data = {
             "response" : {
-                "name" : "genomes/changes",
+                "name" : "organisms/changes",
                 "since" : since,
-                "results" : organism_list
+                "results" : organismHash.values()
             }
         }
+        
         return data
 
 def main():

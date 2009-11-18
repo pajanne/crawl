@@ -9,26 +9,20 @@ Copyright (c) 2009 Wellcome Trust Sanger Institute. All rights reserved.
 
 import sys
 import os
-
+import logging
 
 import ConfigParser
 
 from sys import exc_info
 
-from business.api import WhatsNew
-from ropy.util import dolog
+from api import WhatsNew
+
 from ropy.server import Formatter
 from ropy.util import LogConf
 
-config = ConfigParser.ConfigParser()
-config.read(os.path.dirname(__file__) + '/../conf/config.ini')
+from setup import *
 
-host=config.get('Connection', 'host')
-database=config.get('Connection', 'database')
-user=config.get('Connection', 'user')
-password=config.get('Connection', 'password')
-
-LogConf.logpath=config.get('Logging', 'path')
+logger = logging.getLogger("charpy")
 
 def main():
     
@@ -62,7 +56,7 @@ def main():
             fileName = fileName.replace(' ', '_')
             fileName = os.path.dirname(__file__) + '/../tmp/' + fileName 
             
-            print fileName
+            logger.info (fileName)
             
             f = open(fileName + ".xml", 'w')
             f.write(str(formatter.formatTemplate('private_annotations.xml.tpl')))
