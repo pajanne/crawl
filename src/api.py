@@ -51,7 +51,7 @@ class WhatsNew(QueryProcessor):
             # return the first value of the first row... 
             return rows[0][0]
         except:
-            raise ServerException("Could not find organism for taxonID " + taxonID, RopyServer.ERROR_CODES.DATA_NOT_FOUND)
+            raise ServerException("Could not find organism for taxonID " + taxonID, RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
     
     def getGenesWithPrivateAnnotationChanges(self, organism_id):
         return self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
@@ -82,7 +82,7 @@ class WhatsNew(QueryProcessor):
             c = time.strptime(date,"%Y-%m-%d")
         except Exception, e:
             # print "date " + date
-            se = ServerException("Invalid date: please supply a valid date markes in 'YYYY-MM-DD' format.", RopyServer.ERROR_CODES.INVALID_DATE)
+            se = ServerException("Invalid date: please supply a valid date markes in 'YYYY-MM-DD' format.", RopyServer.ERROR_CODES["INVALID_DATE"])
             raise ServerException, se
 
 

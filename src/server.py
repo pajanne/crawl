@@ -2,7 +2,6 @@ import sys
 import os
 import ConfigParser
 
-# from business.api import ERROR_CODES
 from high_level_api import FeatureAPI, OrganismAPI
 from ropy.server import RopyServer, RESTController, Root
 from ropy.query import ConnectionFactory
