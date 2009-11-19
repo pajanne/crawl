@@ -1,8 +1,9 @@
 #!/bin/bash
 
-if [ $# -le 3 ]; then
-  echo "charpy test|run|export -conf /path/to/conf/file.ini [(if run) -production True|False]"
-  exit 1
+if [ $# -le 2 ]; then
+    echo "Usage : "
+    echo "charpy test|run|export -conf /path/to/conf/file.ini [(if run) -production True|False]"
+    exit 1
 fi
 
 echo "Python version:"

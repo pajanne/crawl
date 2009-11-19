@@ -32,12 +32,14 @@ except Exception, e:
     sys.exit(1)
 
 try:
+    
     logsetup = LogSetup()
     logsetup.logname = "charpy"
     logsetup.logpath = config.get('Logging', 'path')
     logsetup.setupLogging()
     logger = logsetup.logger
 except Exception, e:
+    print e
     print "Could not set up the logging, is the path set in the conf file correct?"
     sys.exit(1)
 
