@@ -10,7 +10,7 @@ from setup import *
 
 class FeatureController(RESTController):
     """
-        Queries for feature related queries.
+        Feature related queries.
     """
     
     def __init__(self):
@@ -57,6 +57,10 @@ class FeatureController(RESTController):
     
     
 class SourceFeatureController(RESTController):
+    """
+        Source feature related queries.
+    """
+    
     def __init__(self):
        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
        self.api = FeatureAPI(connectionFactory)
@@ -85,7 +89,7 @@ class SourceFeatureController(RESTController):
 
 class OrganismController(RESTController):
     """
-        Queries for organism related queries.
+        Organism related queries.
     """
     
     def __init__(self):
