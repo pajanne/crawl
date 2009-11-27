@@ -56,6 +56,31 @@ class FeatureController(RESTController):
     annotation_changes.arguments = { "taxonomyID" : "the NCBI taxonomy ID"  }
     
     
+class SourceFeatureController(RESTController):
+    def __init__(self):
+       self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
+       self.api = FeatureAPI(connectionFactory)
+       
+    def sequence_xml(self, uniqueName, start, end):
+        return self.sequence(uniqueName, start, end)
+    sequence_xml.exposed = True
+    def sequence_json(self, uniqueName, start, end):
+        return self.sequence(uniqueName, start, end)
+    sequence_json.exposed = True
+       
+    def sequence(self, uniqueName, start, end):
+        """
+            Returns the sequence of a source feature.
+        """
+        self.init_handler()
+        data = self.api.getSoureFeatureSequence(uniqueName, start, end)
+        return self.format(data, "source_feature_sequence");
+    sequence.exposed = True
+    sequence.arguments = { 
+        "uniqueName" : "the uniqueName of the source feature" ,
+        "start" : "the start position in the sequence that you wish to retrieve (counting from 1)",
+        "end" : "the end position in the sequence that you wish to retrieve (counting from 0)"
+    }
     
 
 class OrganismController(RESTController):
@@ -103,6 +128,7 @@ if production == "True":
 root = Root()
 root.genes = FeatureController()
 root.organisms = OrganismController()
+root.sourcefeatures = SourceFeatureController()
 
 RopyServer(root, config)
 

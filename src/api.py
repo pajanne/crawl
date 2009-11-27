@@ -39,6 +39,8 @@ class WhatsNew(QueryProcessor):
         self.addQueryFromFile("get_all_organisms_and_taxon_ids", "get_all_organisms_and_taxon_ids.sql")
         
         self.addQueryFromFile("count_all_changed_features", "count_all_changed_features.sql")
+        self.addQueryFromFile("source_feature_sequence", "source_feature_sequence.sql")
+        
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
         self.validateDate(date)
@@ -75,6 +77,12 @@ class WhatsNew(QueryProcessor):
     
     def getAllOrganismsAndTaxonIDs(self):
         return self.runQueryAndMakeDictionary("get_all_organisms_and_taxon_ids")
+    
+    
+    def getSourceFeatureSequence(self, uniqueName):
+        rows = self.runQueryAndMakeDictionary("source_feature_sequence", (uniqueName, ))
+        return rows
+    
     
     
     def validateDate(self, date):

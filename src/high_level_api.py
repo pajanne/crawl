@@ -54,8 +54,29 @@ class FeatureAPI(object):
             }
         }
         return data
+    
+    def getSoureFeatureSequence(self, uniqueName, start, end):
+        rows = self.api.getSourceFeatureSequence(uniqueName)
+        row = rows[0]
 
+        length = row["length"]
+        dna = row["dna"]
+        dna = dna[int(start)-1:int(end)-1]
 
+        data = {
+            "response" : {
+                "name" : "sourcefeatures/sequence",
+                "sequence" :  [{
+                    "uniqueName" : uniqueName,
+                    "start" : start,
+                    "end" : end,
+                    "length" : length,
+                    "dna" : dna
+                }]
+            }
+        }
+        
+        return data
 
 
 class OrganismAPI(object):
