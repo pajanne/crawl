@@ -1,6 +1,6 @@
 <response>
     <results name="$response.name" >
-    <!-- returns all the detected changes for a particular organism from a certain date  -->
+    <!-- returns the sequence of a source feature  -->
     #for $sequence in $response.sequence:
         <gene 
             uniqueName="$sequence.uniqueName"
