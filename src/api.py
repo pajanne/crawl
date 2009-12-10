@@ -90,11 +90,6 @@ class WhatsNew(QueryProcessor):
     
     def getFeatureLocs(self, sourceFeatureID, start, end):
         rows = self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end))
-        
-        r = self.runQuery('feature_locs', (sourceFeatureID, start, end))
-        
-        for row in r: print row[7]
-        
         return rows
     
     def getFeatureID(self, uniqueName):
