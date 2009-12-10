@@ -40,6 +40,8 @@ class WhatsNew(QueryProcessor):
         
         self.addQueryFromFile("count_all_changed_features", "count_all_changed_features.sql")
         self.addQueryFromFile("source_feature_sequence", "source_feature_sequence.sql")
+        self.addQueryFromFile("feature_locs", "feature_locs.sql")
+        self.addQueryFromFile("get_feature_id_from_uniquename", "get_feature_id_from_uniquename.sql")
         
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
@@ -55,8 +57,16 @@ class WhatsNew(QueryProcessor):
         except:
             raise ServerException("Could not find organism for taxonID " + taxonID, RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
     
-    def getGenesWithPrivateAnnotationChanges(self, organism_id):
-        return self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
+    def getGenesWithPrivateAnnotationChanges(self, organism_id, since):
+        returned = self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
+        sinceDate = time.strptime(since,"%Y-%m-%d")
+        results = []
+        for result in returned:
+            resultDate = time.strptime(result["changedate"] ,"%Y-%m-%d")
+            # print time.strftime("%Y-%m-%d",resultDate) + ">=" + time.strftime("%Y-%m-%d",sinceDate) + " = " + str(resultDate >= sinceDate)
+            if (resultDate >= sinceDate):
+                results.append(result)
+        return results
     
     def countAllChangedFeaturesForOrganism(self, organism_id, since):
         self.validateDate(since)        
@@ -68,11 +78,6 @@ class WhatsNew(QueryProcessor):
     def countAllChangedFeaturesForOrganisms(self, since, organismIDs):
         ids = tuple (organismIDs)
         rows = self.runQuery("count_all_changed_features", (since, ids) );
-        
-        # result = {}
-        #         for row in rows:
-        #             result[row[0]] = row[1]
-        #         
         return rows
     
     def getAllOrganismsAndTaxonIDs(self):
@@ -83,7 +88,16 @@ class WhatsNew(QueryProcessor):
         rows = self.runQueryAndMakeDictionary("source_feature_sequence", (uniqueName, ))
         return rows
     
+    def getFeatureLocs(self, sourceFeatureID, start, end):
+        return self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end))
     
+    def getFeatureID(self, uniqueName):
+        try:
+            rows = self.runQuery("get_feature_id_from_uniquename", (uniqueName, ))
+            return rows[0][0]
+        except Exception, e:
+            se = ServerException("Could not find a source feature with uniqueName of " + uniqueName + ".", RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
+            raise ServerException, se
     
     def validateDate(self, date):
         try:

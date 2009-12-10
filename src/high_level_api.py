@@ -40,16 +40,17 @@ class FeatureAPI(object):
         return data
     
     
-    def annotation_changes(self, taxonID):
+    def annotation_changes(self, taxonID, since):
         organism_id = self.api.getOrganismFromTaxon(taxonID)
         
-        rows = self.api.getGenesWithPrivateAnnotationChanges(organism_id)
+        rows = self.api.getGenesWithPrivateAnnotationChanges(organism_id, since)
         
         data = {
             "response" : {
                 "name" : "genes/annotation_changes",
                 "taxonomyID" : taxonID,
                 "count" : len(rows),
+                "since" : since,
                 "results" : rows
             }
         }
@@ -76,6 +77,19 @@ class FeatureAPI(object):
             }
         }
         
+        return data
+    
+    def getFeatureLoc(self, sourceFeatureUniqueName, start, end):
+        sourceFeatureID = self.api.getFeatureID(sourceFeatureUniqueName)
+        featurelocs = self.api.getFeatureLocs(sourceFeatureID, start, end)
+        
+        data = {
+            "response" : {
+                "name" : "sourcefeatures/featureloc", 
+                "uniqueName" : sourceFeatureUniqueName,
+                "features" : featurelocs
+            }
+        }
         return data
 
 

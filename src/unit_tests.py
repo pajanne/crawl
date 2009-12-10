@@ -49,9 +49,10 @@ class BusinessTests(unittest.TestCase):
     def testGetOrganismFromTaxon(self):
         taxonID = self.whats_new.getOrganismFromTaxon('420245')
         self.assertEquals(taxonID, 14)
-
+    
     def testGetGenesWithPrivateAnnotationChanges(self):
-        rows = self.whats_new.getGenesWithPrivateAnnotationChanges(14)
+        since = "2009-06-01"
+        rows = self.whats_new.getGenesWithPrivateAnnotationChanges(14, since)
     
         data = {
             "response" : {
@@ -65,8 +66,8 @@ class BusinessTests(unittest.TestCase):
         formatter = Formatter(data, os.path.dirname(__file__) + "/../tpl/")
         formatter.formatTemplate('private_annotations.xml.tpl')
         formatter.formatJSON()
-
-
+    
+    
     def testAllOrganisms(self):
         since = "2009-06-01"
     
@@ -97,16 +98,16 @@ class BusinessTests(unittest.TestCase):
     
         formatter = Formatter(data, os.path.dirname(__file__) + "/../tpl/")
         print formatter.formatTemplate('genomes_changed.xml.tpl')
-
-
+    
+    
     def testCountAllOrganisms(self):
         since = "2009-06-01"
         organismIDs = [12, 14, 15, 20]
     
         result = self.whats_new.countAllChangedFeaturesForOrganisms(since, organismIDs)
         print result
-
-
+    
+    
     def testGetSourceFeatureSequence(self):
         rows = self.whats_new.getSourceFeatureSequence("Pf3D7_01")
         row = rows[0]
@@ -132,6 +133,13 @@ class BusinessTests(unittest.TestCase):
         
         formatter = Formatter(data, os.path.dirname(__file__) + "/../tpl/")
         print formatter.formatJSON()
+
+    def testGetFeatureLocs(self):
+        json_data = self.whats_new.getFeatureLocs(1, 1, 10000)
+        print  json.dumps(json_data, sort_keys=True, indent=4)
+        
+    def testGetID(self):
+        print self.whats_new.getFeatureID("Pf3D7_01")
 
 class ClientServerTests(unittest.TestCase):
     

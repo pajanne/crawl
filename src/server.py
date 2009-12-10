@@ -45,15 +45,15 @@ class FeatureController(RESTController):
         return self.annotation_changes(taxonomyID)
     annotation_changes_xml.exposed = True
     
-    def annotation_changes(self, taxonomyID):
+    def annotation_changes(self, taxonomyID, since):
         """
             Reports all the genes that have been highlighted as having annotation changes.
         """
         self.init_handler()
-        data = self.api.annotation_changes(taxonomyID)
+        data = self.api.annotation_changes(taxonomyID, since)
         return self.format(data, "private_annotations");
     annotation_changes.exposed = True
-    annotation_changes.arguments = { "taxonomyID" : "the NCBI taxonomy ID"  }
+    annotation_changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID" }
     
     
 class SourceFeatureController(RESTController):
@@ -83,9 +83,31 @@ class SourceFeatureController(RESTController):
     sequence.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position in the sequence that you wish to retrieve (counting from 1)",
-        "end" : "the end position in the sequence that you wish to retrieve (counting from 0)"
+        "end" : "the end position in the sequence that you wish to retrieve (counting from 1)"
     }
     
+    
+    def featureloc_xml(self, uniqueName, start, end):
+        return self.featureloc(uniqueName, start, end)
+    featureloc_xml.exposed = True
+    def featureloc_json(self, uniqueName, start, end):
+        return self.featureloc(uniqueName, start, end)
+    featureloc_json.exposed = True
+    
+    def featureloc(self, uniqueName, start, end):
+        """
+            Returns information about all the features located on a source feature within min and max boundaries.
+        """
+        self.init_handler()
+        data = self.api.getFeatureLoc(uniqueName, start, end)
+        return self.format(data, "featureloc");
+    featureloc.exposed = True
+    featureloc.arguments = { 
+        "uniqueName" : "the uniqueName of the source feature" ,
+        "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
+        "end" : "the end position of the features locations that you wish to retrieve (counting from 1)"
+    }
+        
 
 class OrganismController(RESTController):
     """
