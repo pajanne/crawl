@@ -122,7 +122,7 @@ class SourceFeatureController(RESTController):
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         self.init_handler()
-        print uniqueName + " : " + str(start) + " - " + str(end)
+        logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
         data = self.api.getFeatureLoc(uniqueName, start, end)
         return self.format(data, "featureloc");
     featureloc.exposed = True
@@ -193,7 +193,6 @@ class WikiController(RESTController):
                 "data" : getPage(name)
             }
         }
-        print data
         return self.format(data, None);
     page.exposed = True
     page.arguments = { "name" : "the name of the page" }
@@ -202,7 +201,7 @@ class WikiController(RESTController):
 
 config = None
 if production == "True":
-    print "Going into production"
+    logger.info("Going into production")
     config = {
         "environment": "production",
         "server.socket_port": 6666,

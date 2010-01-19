@@ -114,7 +114,7 @@ class OrganismAPI(object):
         
         for count in counts:
             organismID = str(count[0])
-            print organismID
+            logger.debug (organismID)
             org = organismHash[organismID]
             org["count"] = count[1]
         

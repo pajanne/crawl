@@ -98,14 +98,9 @@ class WhatsNew(QueryProcessor):
             r["features"] = []
             ht[r["uniquename"]] = r
             
-            
-            # import json
-            # print json.dumps(r, indent=4)
         
         # use the hash to nest children
-        
         newRows = []
-        
         for r in rows:
             if r["parent"] in ht:
                 parent = ht[r["parent"]]
@@ -113,9 +108,8 @@ class WhatsNew(QueryProcessor):
             else:
                 newRows.append(r)
         
-        # import json
-        # print json.dumps(rows, indent=4)
-        # 
+        ht = None
+        rows = None
         
         return newRows
     
@@ -124,7 +118,7 @@ class WhatsNew(QueryProcessor):
             rows = self.runQuery("get_feature_id_from_uniquename", (uniqueName, ))
             return rows[0][0]
         except Exception, e:
-            print e
+            logger.error(e)
             se = ServerException("Could not find a source feature with uniqueName of " + uniqueName + ".", RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
             raise ServerException, se
     
@@ -133,6 +127,7 @@ class WhatsNew(QueryProcessor):
             c = time.strptime(date,"%Y-%m-%d")
         except Exception, e:
             # print "date " + date
+            logger.error(e)
             se = ServerException("Invalid date: please supply a valid date markes in 'YYYY-MM-DD' format.", RopyServer.ERROR_CODES["INVALID_DATE"])
             raise ServerException, se
 
