@@ -50,7 +50,7 @@ def main():
             
             formatter = Formatter(data)
             
-            formatted = formatter.formatTemplate('private_annotations.xml.tpl')
+            formatted = formatter.formatXML('private_annotations.xml.tpl')
             
             fileName = organism_details["name"].replace('/', '' )
             fileName = fileName.replace(' ', '_')
@@ -59,7 +59,7 @@ def main():
             logger.info (fileName)
             
             f = open(fileName + ".xml", 'w')
-            f.write(str(formatter.formatTemplate('private_annotations.xml.tpl')))
+            f.write(str(formatter.formatXML('private_annotations.xml.tpl')))
             f.close()
             
             f2 = open(fileName + ".json", 'w')

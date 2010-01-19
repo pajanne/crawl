@@ -44,7 +44,7 @@ class BusinessTests(unittest.TestCase):
         
             formatter = Formatter(data, os.path.dirname(__file__) + "/../tpl/")
             formatter.formatJSON()
-            formatter.formatTemplate("changes.xml.tpl")
+            formatter.formatXML("changes.xml.tpl")
         
     def testGetOrganismFromTaxon(self):
         taxonID = self.whats_new.getOrganismFromTaxon('420245')
@@ -64,7 +64,7 @@ class BusinessTests(unittest.TestCase):
         }
     
         formatter = Formatter(data, os.path.dirname(__file__) + "/../tpl/")
-        formatter.formatTemplate('private_annotations.xml.tpl')
+        formatter.formatXML('private_annotations.xml.tpl')
         formatter.formatJSON()
     
     
@@ -97,7 +97,7 @@ class BusinessTests(unittest.TestCase):
         }
     
         formatter = Formatter(data, os.path.dirname(__file__) + "/../tpl/")
-        print formatter.formatTemplate('genomes_changed.xml.tpl')
+        print formatter.formatXML('genomes_changed.xml.tpl')
     
     
     def testCountAllOrganisms(self):

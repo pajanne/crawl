@@ -26,7 +26,7 @@ logger = logging.getLogger("charpy")
 class WhatsNew(QueryProcessor):
     
     def __init__(self, connectionFactory):
-        super(WhatsNew, self).__init__(connection=connectionFactory)
+        super(WhatsNew, self).__init__(connection=connectionFactory, single=True)
         
         
         # reset the path to this the sql subfolder at the location class
@@ -89,14 +89,42 @@ class WhatsNew(QueryProcessor):
         return rows
     
     def getFeatureLocs(self, sourceFeatureID, start, end):
-        rows = self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end))
-        return rows
+        rows = self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end, start, end))
+        
+        ht = {}
+        
+        # make a hashtable of each row
+        for r in rows:
+            r["features"] = []
+            ht[r["uniquename"]] = r
+            
+            
+            # import json
+            # print json.dumps(r, indent=4)
+        
+        # use the hash to nest children
+        
+        newRows = []
+        
+        for r in rows:
+            if r["parent"] in ht:
+                parent = ht[r["parent"]]
+                parent["features"].append(r)
+            else:
+                newRows.append(r)
+        
+        # import json
+        # print json.dumps(rows, indent=4)
+        # 
+        
+        return newRows
     
     def getFeatureID(self, uniqueName):
         try:
             rows = self.runQuery("get_feature_id_from_uniquename", (uniqueName, ))
             return rows[0][0]
         except Exception, e:
+            print e
             se = ServerException("Could not find a source feature with uniqueName of " + uniqueName + ".", RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
             raise ServerException, se
     

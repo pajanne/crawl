@@ -122,6 +122,7 @@ class SourceFeatureController(RESTController):
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         self.init_handler()
+        print uniqueName + " : " + str(start) + " - " + str(end)
         data = self.api.getFeatureLoc(uniqueName, start, end)
         return self.format(data, "featureloc");
     featureloc.exposed = True
