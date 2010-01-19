@@ -1,12 +1,29 @@
-import sys
-import os
+import cherrypy
 import ConfigParser
+import os
+import sys
+import logging
 
 from high_level_api import FeatureAPI, OrganismAPI
 from ropy.server import RopyServer, RESTController, Root
 from ropy.query import ConnectionFactory
 
 from setup import *
+
+logger = logging.getLogger("charpy")
+
+def setup_connection(thread_index):
+    from setup import host, database, user, password
+    cherrypy.thread_data.connectionFactory = ConnectionFactory(host, database, user, password)
+    logger.info ("setup connection in thread " + str(thread_index) + " ... is in thread_data? " + str(hasattr(cherrypy.thread_data, "connectionFactory")) )
+
+
+def close_connection(thread_index):
+    logger.info ("attempting to close connection in thread " + str(thread_index))
+    if hasattr(cherrypy.thread_data, "connectionFactory"):
+        cherrypy.thread_data.connectionFactory.closeConnection()
+    else:
+        logger.info ("no connection to close in thread " + str(thread_index))
 
 class FeatureController(RESTController):
     """
@@ -15,7 +32,10 @@ class FeatureController(RESTController):
     
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-        self.api = FeatureAPI(connectionFactory)
+    
+    def init_handler(self):
+        self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
+        super(FeatureController, self).init_handler()
     
     def changes_xml(self, since, taxonomyID):
         return self.changes(since, taxonomyID)
@@ -63,7 +83,10 @@ class SourceFeatureController(RESTController):
     
     def __init__(self):
        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-       self.api = FeatureAPI(connectionFactory)
+    
+    def init_handler(self):
+       self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
+       super(SourceFeatureController, self).init_handler()
        
     def sequence_xml(self, uniqueName, start, end):
         return self.sequence(uniqueName, start, end)
@@ -116,7 +139,10 @@ class OrganismController(RESTController):
     
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-        self.api = OrganismAPI(connectionFactory)
+    
+    def init_handler(self):
+        self.api = OrganismAPI(cherrypy.thread_data.connectionFactory)
+        super(OrganismController, self).init_handler()
     
     def changes_json(self, since):
         return self.changes(since)
@@ -156,7 +182,7 @@ root.genes = FeatureController()
 root.organisms = OrganismController()
 root.sourcefeatures = SourceFeatureController()
 
-RopyServer(root, config)
+RopyServer(root, config, setup_connection, close_connection)
 
 
 

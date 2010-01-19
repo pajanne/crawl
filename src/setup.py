@@ -53,7 +53,7 @@ database=config.get('Connection', 'database')
 user=config.get('Connection', 'user')
 password=config.get('Connection', 'password')
 
-connectionFactory = ConnectionFactory(host, database, user, password)
+# connectionFactory = ConnectionFactory(host, database, user, password)
 
 
 def main():
