@@ -164,6 +164,42 @@ class OrganismController(RESTController):
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }
     
 
+class WikiController(RESTController):
+    """
+        Wiki page extraction functions.
+    """
+    
+    def __init__(self):
+        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
+    
+    def page_xml(self, name):
+        return self.page(name)
+    page_xml.exposed = True
+    
+    def page_json(self, name):
+        return self.page(name)
+    page_json.exposed = True
+    
+    def page(self, name):
+        """
+            Returns the contents of a wiki page.
+        """
+        self.init_handler()
+        from wiki.wikipy import getPage
+        data = { 
+            "response" : {
+                "name" : "wiki/page",
+                "page" : name,
+                "data" : getPage(name)
+            }
+        }
+        print data
+        return self.format(data, None);
+    page.exposed = True
+    page.arguments = { "name" : "the name of the page" }
+    
+
+
 config = None
 if production == "True":
     print "Going into production"
@@ -182,6 +218,7 @@ root = Root()
 root.genes = FeatureController()
 root.organisms = OrganismController()
 root.sourcefeatures = SourceFeatureController()
+root.wiki = WikiController()
 
 RopyServer(root, config, setup_connection, close_connection)
 
