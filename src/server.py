@@ -4,6 +4,8 @@ import os
 import sys
 import logging
 
+import ropy
+
 from high_level_api import FeatureAPI, OrganismAPI
 from ropy.server import RopyServer, RESTController, Root
 from ropy.query import ConnectionFactory
@@ -37,15 +39,16 @@ class FeatureController(RESTController):
         self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
         super(FeatureController, self).init_handler()
     
+    @cherrypy.expose
     def changes_xml(self, since, taxonomyID):
         return self.changes(since, taxonomyID)
-    changes_xml.exposed = True
     
+    @cherrypy.expose
+    @ropy.server.jsonp
     def changes_json(self, since, taxonomyID):
         return self.changes(since, taxonomyID)
-    changes_json.exposed = True
     
-
+    @cherrypy.expose
     def changes(self, since, taxonomyID):
         """
             Reports all the features that have changed since a certain date.
@@ -53,18 +56,18 @@ class FeatureController(RESTController):
         self.init_handler()
         data = self.api.changes(since, taxonomyID)
         return self.format(data, "changes");
-    changes.exposed = True
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID"  }
     
-    
+    @cherrypy.expose
+    @ropy.server.jsonp
     def annotation_changes_json(self, taxonomyID):
         return self.annotation_changes(taxonomyID)
-    annotation_changes_json.exposed = True
     
+    @cherrypy.expose
     def annotation_changes_xml(self, taxonomyID):
         return self.annotation_changes(taxonomyID)
-    annotation_changes_xml.exposed = True
     
+    @cherrypy.expose
     def annotation_changes(self, taxonomyID, since):
         """
             Reports all the genes that have been highlighted as having annotation changes.
@@ -72,7 +75,6 @@ class FeatureController(RESTController):
         self.init_handler()
         data = self.api.annotation_changes(taxonomyID, since)
         return self.format(data, "private_annotations");
-    annotation_changes.exposed = True
     annotation_changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID" }
     
     
@@ -88,13 +90,16 @@ class SourceFeatureController(RESTController):
        self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
        super(SourceFeatureController, self).init_handler()
        
+    @cherrypy.expose
     def sequence_xml(self, uniqueName, start, end):
         return self.sequence(uniqueName, start, end)
-    sequence_xml.exposed = True
+    
+    @cherrypy.expose
+    @ropy.server.jsonp
     def sequence_json(self, uniqueName, start, end):
         return self.sequence(uniqueName, start, end)
-    sequence_json.exposed = True
-       
+    
+    @cherrypy.expose
     def sequence(self, uniqueName, start, end):
         """
             Returns the sequence of a source feature.
@@ -102,21 +107,22 @@ class SourceFeatureController(RESTController):
         self.init_handler()
         data = self.api.getSoureFeatureSequence(uniqueName, start, end)
         return self.format(data, "source_feature_sequence");
-    sequence.exposed = True
     sequence.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position in the sequence that you wish to retrieve (counting from 1)",
         "end" : "the end position in the sequence that you wish to retrieve (counting from 1)"
     }
     
-    
+    @cherrypy.expose
     def featureloc_xml(self, uniqueName, start, end):
         return self.featureloc(uniqueName, start, end)
-    featureloc_xml.exposed = True
+    
+    @cherrypy.expose
+    @ropy.server.jsonp
     def featureloc_json(self, uniqueName, start, end):
         return self.featureloc(uniqueName, start, end)
-    featureloc_json.exposed = True
     
+    @cherrypy.expose
     def featureloc(self, uniqueName, start, end):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
@@ -125,7 +131,6 @@ class SourceFeatureController(RESTController):
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
         data = self.api.getFeatureLoc(uniqueName, start, end)
         return self.format(data, "featureloc");
-    featureloc.exposed = True
     featureloc.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
@@ -145,14 +150,16 @@ class OrganismController(RESTController):
         self.api = OrganismAPI(cherrypy.thread_data.connectionFactory)
         super(OrganismController, self).init_handler()
     
+    @cherrypy.expose
+    @ropy.server.jsonp
     def changes_json(self, since):
         return self.changes(since)
-    changes_json.exposed = True
     
+    @cherrypy.expose
     def changes_xml(self, since):
         return self.changes(since)
-    changes_xml.exposed = True
     
+    @cherrypy.expose
     def changes(self, since):
         """
             Reports all the organisms, their taxononmyIDs and a count of how many features have changed since a certain date.
@@ -160,7 +167,6 @@ class OrganismController(RESTController):
         self.init_handler()
         data = self.api.changes(since)
         return self.format(data, "genomes_changed");
-    changes.exposed = True
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }
     
 
@@ -172,14 +178,17 @@ class WikiController(RESTController):
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
+    @cherrypy.expose
     def page_xml(self, name):
         return self.page(name)
-    page_xml.exposed = True
     
+    
+    @cherrypy.expose
+    @ropy.server.jsonp
     def page_json(self, name):
         return self.page(name)
-    page_json.exposed = True
     
+    @cherrypy.expose
     def page(self, name):
         """
             Returns the contents of a wiki page.
@@ -194,7 +203,6 @@ class WikiController(RESTController):
             }
         }
         return self.format(data, None);
-    page.exposed = True
     page.arguments = { "name" : "the name of the page" }
     
 
