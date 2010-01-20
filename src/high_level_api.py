@@ -79,9 +79,9 @@ class FeatureAPI(object):
         
         return data
     
-    def getFeatureLoc(self, sourceFeatureUniqueName, start, end):
+    def getFeatureLoc(self, sourceFeatureUniqueName, start, end, relationships):
         sourceFeatureID = self.api.getFeatureID(sourceFeatureUniqueName)
-        featurelocs = self.api.getFeatureLocs(sourceFeatureID, start, end)
+        featurelocs = self.api.getFeatureLocs(sourceFeatureID, start, end, relationships)
         
         data = {
             "response" : {

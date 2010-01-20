@@ -88,7 +88,7 @@ class WhatsNew(QueryProcessor):
         rows = self.runQueryAndMakeDictionary("source_feature_sequence", (uniqueName, ))
         return rows
     
-    def getFeatureLocs(self, sourceFeatureID, start, end):
+    def getFeatureLocs(self, sourceFeatureID, start, end, relationships):
         rows = self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end, start, end))
         
         ht = {}
@@ -98,16 +98,31 @@ class WhatsNew(QueryProcessor):
             r["features"] = []
             ht[r["uniquename"]] = r
             
-        
+            
         # use the hash to nest children
         newRows = []
         for r in rows:
+            
+            add = False
+            
+            if r["relationship_type"] == "None":
+                add = True
+            elif str(r["relationship_type"]) in relationships:
+                add = True
+            
+            if add == False:
+                continue
+            
             if r["parent"] in ht:
-                parent = ht[r["parent"]]
-                parent["features"].append(r)
+                if str(r["relationship_type"]) in relationships:
+                    parent = ht[r["parent"]]
+                    parent["features"].append(r)
+                else:
+                    s.append("NOT")
             else:
                 newRows.append(r)
-        
+                
+            
         ht = None
         rows = None
         

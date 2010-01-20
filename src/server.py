@@ -114,27 +114,41 @@ class SourceFeatureController(RESTController):
     }
     
     @cherrypy.expose
-    def featureloc_xml(self, uniqueName, start, end):
-        return self.featureloc(uniqueName, start, end)
+    def featureloc_xml(self, uniqueName, start, end, **kwargs):
+        return self.featureloc(uniqueName, start, end, **kwargs)
     
     @cherrypy.expose
     @ropy.server.jsonp
-    def featureloc_json(self, uniqueName, start, end):
-        return self.featureloc(uniqueName, start, end)
+    def featureloc_json(self, uniqueName, start, end, **kwargs):
+        return self.featureloc(uniqueName, start, end, **kwargs)
     
     @cherrypy.expose
-    def featureloc(self, uniqueName, start, end):
+    def featureloc(self, uniqueName, start, end, **kwargs):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         self.init_handler()
+        
+        relationships = ["part_of", "derives_from"]
+        
+        import types
+        if "relationships" in kwargs:
+            relationships = kwargs["relationships"]
+            print type(relationships)
+            if type(relationships) is not types.ListType:
+                relationships = [relationships]
+            print type(relationships)
+        
+        print relationships
+        
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
-        data = self.api.getFeatureLoc(uniqueName, start, end)
+        data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
         return self.format(data, "featureloc");
     featureloc.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
-        "end" : "the end position of the features locations that you wish to retrieve (counting from 1)"
+        "end" : "the end position of the features locations that you wish to retrieve (counting from 1)",
+        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]"
     }
         
 
