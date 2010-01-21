@@ -239,7 +239,7 @@ root = Root()
 root.genes = FeatureController()
 root.organisms = OrganismController()
 root.sourcefeatures = SourceFeatureController()
-root.wiki = WikiController()
+# root.wiki = WikiController()
 
 RopyServer(root, config, setup_connection, close_connection)
 
