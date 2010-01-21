@@ -89,7 +89,7 @@ class WhatsNew(QueryProcessor):
         return rows
     
     def getFeatureLocs(self, sourceFeatureID, start, end, relationships):
-        rows = self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end, start, end))
+        rows = self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end, start, end, start, end))
         
         ht = {}
         

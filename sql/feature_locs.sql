@@ -19,5 +19,5 @@ SELECT
     LEFT OUTER JOIN feature pr ON fr.object_id = pr.feature_id
     LEFT OUTER JOIN cvterm cft ON fr.type_id = cft.cvterm_id
     WHERE fl.srcfeature_id = %s
-    AND ( (fl.fmin BETWEEN %s AND %s ) OR (fl.fmax BETWEEN %s AND %s ) )
+    AND ( (fl.fmin BETWEEN %s AND %s ) OR (fl.fmax BETWEEN %s AND %s ) OR ( fl.fmin <= %s AND fl.fmax >= %s ) )
     ORDER BY fl.fmin, fl.fmax
