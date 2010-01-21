@@ -98,7 +98,7 @@ class WhatsNew(QueryProcessor):
             r["features"] = []
             ht[r["uniquename"]] = r
             
-            
+        print relationships
         # use the hash to nest children
         newRows = []
         for r in rows:
@@ -107,7 +107,8 @@ class WhatsNew(QueryProcessor):
             
             if r["relationship_type"] == "None":
                 add = True
-            elif str(r["relationship_type"]) in relationships:
+            
+            if str(r["relationship_type"]) in relationships:
                 add = True
             
             if add == False:
@@ -117,8 +118,6 @@ class WhatsNew(QueryProcessor):
                 if str(r["relationship_type"]) in relationships:
                     parent = ht[r["parent"]]
                     parent["features"].append(r)
-                else:
-                    s.append("NOT")
             else:
                 newRows.append(r)
                 
