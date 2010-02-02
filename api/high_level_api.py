@@ -79,9 +79,14 @@ class FeatureAPI(object):
         
         return data
     
-    def getFeatureLoc(self, sourceFeatureUniqueName, start, end, relationships):
+    def getFeatureLoc(self, sourceFeatureUniqueName, start, end, relationships, root_types):
         sourceFeatureID = self.api.getFeatureID(sourceFeatureUniqueName)
-        featurelocs = self.api.getFeatureLocs(sourceFeatureID, start, end, relationships)
+        
+        relationship_ids = []
+        for relationship in relationships:
+            relationship_ids.append(self.api.getCvtermID("relationship", relationship))
+        
+        featurelocs = self.api.getFeatureLocs(sourceFeatureID, start, end, relationship_ids, root_types)
         
         data = {
             "response" : {
@@ -92,11 +97,36 @@ class FeatureAPI(object):
         }
         return data
 
+    def getTopLevel(self, taxonID):
+       organism_id = self.api.getOrganismFromTaxon(taxonID)
+       results = self.api.getTopLevel(organism_id)
+       
+       data = {
+           "response" : {
+               "name" : "genes/top",
+               "taxonId" : taxonID,
+               "features" : results
+           }
+       }
+       
+       return data
+
 
 class OrganismAPI(object):
     
     def __init__(self, connectionFactory):
         self.api = WhatsNew(connectionFactory)
+    
+    def getAllOrganismsAndTaxonIDs(self):
+        organism_list = self.api.getAllOrganismsAndTaxonIDs()
+        
+        data = {
+            "response" : {
+                "name" : "organisms/list",
+                "organisms" : organism_list
+            }
+        }
+        return data
     
     def changes(self, since):
         logger.debug(since)
@@ -114,7 +144,7 @@ class OrganismAPI(object):
         
         for count in counts:
             organismID = str(count[0])
-            logger.debug (organismID)
+            # logger.debug (organismID)
             org = organismHash[organismID]
             org["count"] = count[1]
         

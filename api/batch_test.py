@@ -27,23 +27,22 @@ class BatchTest ( threading.Thread ):
         }
         
         # try :
-        data = client.request("sourcefeatures/featureloc.xml", parameters)
+        data = client.request("sourcefeatures/featureloc.json", parameters)
         
-        print data.toprettyxml()
+        # print data.toprettyxml()
+        response = data['response']
+        if "error" in response:
+            print json.dumps(data, indent=4)
         
-        # print json.dumps(json_data, indent=4)
-        # except ServerReportedException, se:
-        #     print "ERROR"
-        #     print se
 
 def main():
     
     # we want to replicate several users calling from different Ajax clients at the same time
     # to make this test as asynchronous as possible, we start a new thread for each client call
-    for i in range(1,5):
+    for i in range(1,100):
         
         # span = random.randint(1, 10000)
-        span = 10000
+        span = 100000
         
         batchTest = BatchTest()
         batchTest.startValue = (i * 1000 ) - (999)

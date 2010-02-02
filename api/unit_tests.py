@@ -12,16 +12,56 @@ import os
 import json
 import sys
 import unittest
+import optparse
 
 
 from api import WhatsNew
+
+import ropy.query
 from ropy.client import RopyClient, ServerReportedException
 from ropy.server import Formatter
-from ropy.query import ConnectionFactory
 
-from setup import *
+
+
+parser = optparse.OptionParser()
+parser.add_option("-c", "--conf", dest="conf", action="store", help="the path to the configuration file")
+(options, args) = parser.parse_args()
+if options.conf == None: sys.exit("Please supply a conf parameter.")
+
+config = ConfigParser.ConfigParser()
+config.read(options.conf)
+
+# cherrypy file-configs must be valid python expressions, they get eval()ed
+host=eval(config.get('Connection', 'host'))
+database=eval(config.get('Connection', 'database'))
+user=eval(config.get('Connection', 'user'))
+password=eval(config.get('Connection', 'password'))
+
+connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
+
+
+
+
 
 class BusinessTests(unittest.TestCase):
+    
+    def setUp(self):
+        self.whats_new = WhatsNew(connectionFactory)
+    
+    def testGetSourceFeatureSequence(self):
+        data = self.whats_new.getFeatureLocs(1, 1, 100000, [42, 69], ["gene", "pseudogene"])
+        formatter = Formatter(data)
+        # print formatter.formatJSON()
+    
+    def testGetTopLevel(self):
+        taxonomy_id = 420245
+        
+        data = self.whats_new.getTopLevel(14)
+        formatter = Formatter(data)
+        print formatter.formatJSON()
+    
+
+class BusinessTests2(unittest.TestCase):
     
     def setUp(self):
         self.whats_new = WhatsNew(connectionFactory)
@@ -135,7 +175,7 @@ class BusinessTests(unittest.TestCase):
         print formatter.formatJSON()
 
     def testGetFeatureLocs(self):
-        json_data = self.whats_new.getFeatureLocs(1, 1, 10000)
+        json_data = self.whats_new.getFeatureLocs(1, 1, 10000, [42, 69], ["gene", "pseudogene"])
         print  json.dumps(json_data, sort_keys=True, indent=4)
         
     def testGetID(self):
@@ -190,5 +230,5 @@ def main():
 
 
 if __name__ == '__main__':
-	unittest.main(argv=['charpy'])
+    unittest.main(argv=['charpy'])
 

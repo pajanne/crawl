@@ -17,9 +17,8 @@ import sys
 import time
 import logging
 
-
 from ropy.query import QueryProcessor
-from ropy.server import RopyServer, ServerException
+from ropy.server import ServerException, RopyServer
 
 logger = logging.getLogger("charpy")
 
@@ -42,6 +41,9 @@ class WhatsNew(QueryProcessor):
         self.addQueryFromFile("source_feature_sequence", "source_feature_sequence.sql")
         self.addQueryFromFile("feature_locs", "feature_locs.sql")
         self.addQueryFromFile("get_feature_id_from_uniquename", "get_feature_id_from_uniquename.sql")
+        self.addQueryFromFile("get_cvterm_id", "get_cvterm_id.sql")
+        
+        self.addQueryFromFile("get_top_level", "get_top_level.sql")
         
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
@@ -76,7 +78,7 @@ class WhatsNew(QueryProcessor):
         return count
     
     def countAllChangedFeaturesForOrganisms(self, since, organismIDs):
-        ids = tuple (organismIDs)
+        ids = tuple (organismIDs) # must convert arrays to tuples
         rows = self.runQuery("count_all_changed_features", (since, ids) );
         return rows
     
@@ -88,52 +90,106 @@ class WhatsNew(QueryProcessor):
         rows = self.runQueryAndMakeDictionary("source_feature_sequence", (uniqueName, ))
         return rows
     
-    def getFeatureLocs(self, sourceFeatureID, start, end, relationships):
-        rows = self.runQueryAndMakeDictionary("feature_locs", (sourceFeatureID, start, end, start, end, start, end))
-        
-        ht = {}
-        
-        # make a hashtable of each row
-        for r in rows:
-            r["features"] = []
-            ht[r["uniquename"]] = r
-            
-        print relationships
-        # use the hash to nest children
-        newRows = []
-        for r in rows:
-            
-            add = False
-            
-            if r["relationship_type"] == "None":
-                add = True
-            
-            if str(r["relationship_type"]) in relationships:
-                add = True
-            
-            if add == False:
-                continue
-            
-            if r["parent"] in ht:
-                if str(r["relationship_type"]) in relationships:
-                    parent = ht[r["parent"]]
-                    parent["features"].append(r)
-            else:
-                newRows.append(r)
-                
-            
-        ht = None
-        rows = None
-        
-        return newRows
+    def getCvtermID(self, cvname, cvtermname ):
+        args = {"cvtermname" : cvtermname, "cvname" : cvname }
+        rows = self.runQuery("get_cvterm_id", args)
+        return rows[0][0]
     
+    def getFeatureLocs(self, source_feature_id, start, end, relationships, root_types):
+        args = {
+            "sourcefeatureid": source_feature_id,
+            "start":start,
+            "end":end,
+            "relationships":tuple(relationships), # must convert arrays to tuples
+            "root_types" : tuple(root_types) 
+        }
+        rows = self.runQueryAndMakeDictionary("feature_locs", args)
+        
+        # the returned results
+        results = []
+        
+        # a temporary hash store, keyed on uniquename, that keeps track of what features have
+        # been generated so far... 
+        result_map = {}
+        
+        for r in rows:
+            
+            root = None
+            if r['l1_uniquename'] in result_map:
+                root = result_map[r['l1_uniquename']]
+            else:
+                root = {
+                    "uniquename" : r["l1_uniquename"],
+                    "start" : r["l1_fmin"],
+                    "end" : r["l1_fmax"],
+                    "strand" : r["l1_strand"],
+                    "phase" : r["l1_phase"],
+                    "seqlen" : r["l1_seqlen"],
+                    "relationship_type" : "",
+                    "type" : r["l1_type"],
+                    "parent" : "",
+                    "features" : []
+                }
+                result_map[r['l1_uniquename']] = root
+                results.append(root)
+            
+            if r['l2_uniquename'] != None: 
+                if r['l2_uniquename'] in result_map:
+                    l2 = result_map[r['l2_uniquename']]
+                else:
+                    l2 = {
+                        "uniquename" : r["l2_uniquename"],
+                        "start" : r["l2_fmin"],
+                        "end" : r["l2_fmax"],
+                        "strand" : r["l2_strand"],
+                        "phase" : r["l2_phase"],
+                        "seqlen" : r["l2_seqlen"],
+                        "relationship_type" : r["l2_reltype"],
+                        "type" : r["l2_type"],
+                        "parent" : root["uniquename"],
+                        "features" : []
+                    }
+                    root["features"].append(l2)
+                    result_map[r['l2_uniquename']] = l2
+            
+            if r['l3_uniquename'] != None: 
+                if r['l3_uniquename'] in result_map:
+                    l3 = result_map[r['l3_uniquename']]
+                else:
+                    l3 = {
+                        "uniquename" : r["l3_uniquename"],
+                        "start" : r["l3_fmin"],
+                        "end" : r["l3_fmax"],
+                        "strand" : r["l3_strand"],
+                        "phase" : r["l3_phase"],
+                        "seqlen" : r["l3_seqlen"],
+                        "relationship_type" : r["l3_reltype"],
+                        "type" : r["l3_type"],
+                        "parent" : l2["uniquename"],
+                        "features" : []
+                    }
+                    l2["features"].append(l3)
+                    result_map[r['l3_uniquename']] = l3
+        
+        results_map = None
+        return results
+    
+    def getTopLevel(self, organism_id):
+        rows = self.runQuery("get_top_level", (organism_id, ))
+        
+        results = []
+        for r in rows:
+            results.append(r[0])
+        
+        return results
+
     def getFeatureID(self, uniqueName):
         try:
             rows = self.runQuery("get_feature_id_from_uniquename", (uniqueName, ))
             return rows[0][0]
         except Exception, e:
             logger.error(e)
-            se = ServerException("Could not find a source feature with uniqueName of " + uniqueName + ".", RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
+            se = ServerException("Could not find a feature with uniqueName of " + uniqueName + ".", RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
             raise ServerException, se
     
     def validateDate(self, date):

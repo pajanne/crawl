@@ -1,31 +1,24 @@
 import cherrypy
-import ConfigParser
+import optparse
 import os
 import sys
-import logging
+import logging, logging.config
 
 import ropy
 
-from high_level_api import FeatureAPI, OrganismAPI
+from api.high_level_api import FeatureAPI, OrganismAPI
 from ropy.server import RopyServer, RESTController, Root
 from ropy.query import ConnectionFactory
 
-from setup import *
+from ropy.alchemy.automapped import *
 
 logger = logging.getLogger("charpy")
 
-def setup_connection(thread_index):
-    from setup import host, database, user, password
-    cherrypy.thread_data.connectionFactory = ConnectionFactory(host, database, user, password)
-    logger.info ("setup connection in thread " + str(thread_index) + " ... is in thread_data? " + str(hasattr(cherrypy.thread_data, "connectionFactory")) )
 
 
-def close_connection(thread_index):
-    logger.info ("attempting to close connection in thread " + str(thread_index))
-    if hasattr(cherrypy.thread_data, "connectionFactory"):
-        cherrypy.thread_data.connectionFactory.closeConnection()
-    else:
-        logger.info ("no connection to close in thread " + str(thread_index))
+
+
+
 
 class FeatureController(RESTController):
     """
@@ -33,20 +26,12 @@ class FeatureController(RESTController):
     """
     
     def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
+        self.templateFilePath = os.path.dirname(__file__) + "tpl/"
     
     def init_handler(self):
         self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
         super(FeatureController, self).init_handler()
     
-    @cherrypy.expose
-    def changes_xml(self, since, taxonomyID):
-        return self.changes(since, taxonomyID)
-    
-    @cherrypy.expose
-    @ropy.server.jsonp
-    def changes_json(self, since, taxonomyID):
-        return self.changes(since, taxonomyID)
     
     @cherrypy.expose
     def changes(self, since, taxonomyID):
@@ -58,14 +43,6 @@ class FeatureController(RESTController):
         return self.format(data, "changes");
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID"  }
     
-    @cherrypy.expose
-    @ropy.server.jsonp
-    def annotation_changes_json(self, taxonomyID):
-        return self.annotation_changes(taxonomyID)
-    
-    @cherrypy.expose
-    def annotation_changes_xml(self, taxonomyID):
-        return self.annotation_changes(taxonomyID)
     
     @cherrypy.expose
     def annotation_changes(self, taxonomyID, since):
@@ -78,26 +55,31 @@ class FeatureController(RESTController):
     annotation_changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID" }
     
     
+    @cherrypy.expose
+    def top(self, taxonID):
+        """
+            Returns a list of top level features for an organism.
+        """
+        self.init_handler()
+        
+        data = self.api.getTopLevel(taxonID)
+        return self.format(data)
+    top.arguments = {
+        "taxonID" : "the taxonID of the organism you want to browse"
+    }
+    
 class SourceFeatureController(RESTController):
     """
         Source feature related queries.
     """
     
     def __init__(self):
-       self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
+       self.templateFilePath = os.path.dirname(__file__) + "tpl/"
     
     def init_handler(self):
        self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
        super(SourceFeatureController, self).init_handler()
        
-    @cherrypy.expose
-    def sequence_xml(self, uniqueName, start, end):
-        return self.sequence(uniqueName, start, end)
-    
-    @cherrypy.expose
-    @ropy.server.jsonp
-    def sequence_json(self, uniqueName, start, end):
-        return self.sequence(uniqueName, start, end)
     
     @cherrypy.expose
     def sequence(self, uniqueName, start, end):
@@ -113,14 +95,6 @@ class SourceFeatureController(RESTController):
         "end" : "the end position in the sequence that you wish to retrieve (counting from 1)"
     }
     
-    @cherrypy.expose
-    def featureloc_xml(self, uniqueName, start, end, **kwargs):
-        return self.featureloc(uniqueName, start, end, **kwargs)
-    
-    @cherrypy.expose
-    @ropy.server.jsonp
-    def featureloc_json(self, uniqueName, start, end, **kwargs):
-        return self.featureloc(uniqueName, start, end, **kwargs)
     
     @cherrypy.expose
     def featureloc(self, uniqueName, start, end, **kwargs):
@@ -130,27 +104,44 @@ class SourceFeatureController(RESTController):
         self.init_handler()
         
         relationships = ["part_of", "derives_from"]
+        root_types = ["gene", "pseudogene"]
         
-        import types
-        if "relationships" in kwargs:
-            relationships = kwargs["relationships"]
-            print type(relationships)
-            if type(relationships) is not types.ListType:
-                relationships = [relationships]
-            print type(relationships)
-        
-        print relationships
+        relationships = self._make_array_from_kwargs("relationships", ["part_of", "derives_from"], **kwargs)
+        root_types = self._make_array_from_kwargs("root_types", ["gene", "pseudogene"], **kwargs)
         
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
-        data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
+        data = self.api.getFeatureLoc(uniqueName, start, end, relationships, root_types)
         return self.format(data, "featureloc");
     featureloc.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
         "end" : "the end position of the features locations that you wish to retrieve (counting from 1)",
-        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]"
+        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
+        "root_types" : "an optional array (i.e. it can be specified several times) specifying what kinds of root features you would like, the defaults are [gene, pseudogene]"
     }
-        
+    
+    
+    
+    
+    
+    def _make_array_from_kwargs(self, kw, default_array, **kwargs):
+        import types
+        if kw in kwargs:
+            arr = kwargs[kw]
+            if type(arr) is not types.ListType:
+                arr = [arr]
+        else:
+            arr = default_array
+        return arr
+    
+    # @cherrypy.expose
+    #     def test(self):
+    #         from ropy.alchemy.sqlalchemy_tool import session
+    #         dbs = session.query(Db)
+    #         s = []
+    #         for db in dbs:
+    #             s.append(db.name + "\n")
+    #         return s
 
 class OrganismController(RESTController):
     """
@@ -158,20 +149,12 @@ class OrganismController(RESTController):
     """
     
     def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
+        self.templateFilePath = os.path.dirname(__file__) + "tpl/"
     
     def init_handler(self):
         self.api = OrganismAPI(cherrypy.thread_data.connectionFactory)
         super(OrganismController, self).init_handler()
     
-    @cherrypy.expose
-    @ropy.server.jsonp
-    def changes_json(self, since):
-        return self.changes(since)
-    
-    @cherrypy.expose
-    def changes_xml(self, since):
-        return self.changes(since)
     
     @cherrypy.expose
     def changes(self, since):
@@ -183,65 +166,117 @@ class OrganismController(RESTController):
         return self.format(data, "genomes_changed");
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }
     
-
-class WikiController(RESTController):
-    """
-        Wiki page extraction functions.
-    """
-    
-    def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     @cherrypy.expose
-    def page_xml(self, name):
-        return self.page(name)
-    
-    
-    @cherrypy.expose
-    @ropy.server.jsonp
-    def page_json(self, name):
-        return self.page(name)
-    
-    @cherrypy.expose
-    def page(self, name):
+    def list(self):
         """
-            Returns the contents of a wiki page.
+            Lists all organisms and their taxonomyIDs. 
         """
         self.init_handler()
-        from wiki.wikipy import getPage
-        data = { 
-            "response" : {
-                "name" : "wiki/page",
-                "page" : name,
-                "data" : getPage(name)
-            }
-        }
-        return self.format(data, None);
-    page.arguments = { "name" : "the name of the page" }
+        data = self.api.getAllOrganismsAndTaxonIDs()
+        return self.format(data)
+    list.arguments = {}
     
 
 
-config = None
-if production == "True":
-    logger.info("Going into production")
-    config = {
-        "environment": "production",
-        "server.socket_port": 6666,
-        "server.thread_pool": 10,
-        "log.screen": False,
-        "log.error_file": error_log,
-        "log.access_file": access_log
-    }
 
 
-# the object construction tree defines the URL paths
-root = Root()
-root.genes = FeatureController()
-root.organisms = OrganismController()
-root.sourcefeatures = SourceFeatureController()
-# root.wiki = WikiController()
+def setup_connection(thread_index):
 
-RopyServer(root, config, setup_connection, close_connection)
+    connection_details = cherrypy.request.app.config['Connection']
+    host = connection_details['host']
+    database = connection_details["database"]
+    user = connection_details["user"]
+    password = connection_details["password"]
+
+    # print host, database, user, password
+
+    cherrypy.thread_data.connectionFactory = ConnectionFactory(host, database, user, password)
+    logger.info ("setup connection in thread " + str(thread_index) + " ... is in thread_data? " + str(hasattr(cherrypy.thread_data, "connectionFactory")) )
+    # print "setup " + str(thread_index)
 
 
+
+
+def close_connection(thread_index):
+    logger.info ("attempting to close connection in thread " + str(thread_index))
+    if hasattr(cherrypy.thread_data, "connectionFactory"):
+        cherrypy.thread_data.connectionFactory.closeConnection()
+    else:
+        logger.info ("no connection to close in thread " + str(thread_index))
+    logger.info( "closing " + str(thread_index))
+
+
+class PGTransaction(cherrypy.Tool):
+    def __init__(self):
+        self._name = 'PGTransaction'
+        self._point = 'on_start_resource'
+        self._priority = 100
+        
+    def _setup(self):
+        cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
+        cherrypy.Tool._setup(self)
+
+    def callable(self):
+        logger.info (cherrypy.thread_data.connectionFactory.getSingleConnection())
+        
+    
+    def on_end_resource(self):
+        
+        typ, value, trace = sys.exc_info()
+        if value is not None:
+            logger.error("exception detected")
+            logger.error(typ)
+            logger.error(value)
+            logger.error(trace)
+            logger.error(cherrypy.thread_data.connectionFactory.getSingleConnection())
+            
+            try:
+                cherrypy.thread_data.connectionFactory.getSingleConnection().rollback()
+            except Exception, e:
+                logger.error("failed rollback")
+                logger.error(e)
+        else:
+            logger.info (cherrypy.thread_data.connectionFactory.getSingleConnection())
+
+
+
+def main():
+    
+    logger = logging.getLogger("loader")
+    logging.config.fileConfig(os.path.dirname(__file__) + "conf/logging.conf")
+    
+    parser = optparse.OptionParser()
+    parser.add_option("-c", "--conf", dest="conf", action="store", help="the path to the configuration file")
+    (options, args) = parser.parse_args()
+    if options.conf == None: sys.exit("Please supply a --conf parameter.")
+    
+    # the object construction tree defines the URL paths
+    root = Root()
+    root.genes = FeatureController()
+    root.organisms = OrganismController()
+    root.sourcefeatures = SourceFeatureController()
+    
+    import ropy
+    import ropy.server
+    
+    cherrypy.config.update({
+        'server.socket_host': '0.0.0.0',
+        'server.socket_port': 6666,
+        'request.error_response' : ropy.server.handle_error,
+        'error_page.default' : ropy.server.error_page_default
+    })
+    
+    cherrypy.engine.subscribe('start_thread', setup_connection)
+    cherrypy.engine.subscribe('stop_thread', close_connection)
+    
+    # import the tools before starting the server
+    import ropy.alchemy.sqlalchemy_tool
+    cherrypy.tools.PGTransaction = PGTransaction()
+    
+    cherrypy.quickstart(root, "/", options.conf)
+    
+
+if __name__ == '__main__':
+    main()
 

@@ -1,1 +1,1 @@
-select feature_id from feature where uniqueName = %s
+select feature_id from feature where uniquename = %s
