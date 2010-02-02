@@ -2,7 +2,11 @@ import cherrypy
 import optparse
 import os
 import sys
-import logging, logging.config
+import logging
+import logging.config
+import logging.handlers
+
+from logging.config import fileConfig
 
 import ropy
 
@@ -256,8 +260,8 @@ def main():
         print ("Please supply a --log parameter.\n")
         sys.exit(parser.print_help())
     
-    import logging
-    logging.config.fileConfig(options.log)
+    
+    fileConfig(str(options.log))
     logger = logging.getLogger("loader")
     
     # the object construction tree defines the URL paths
