@@ -243,13 +243,21 @@ class PGTransaction(cherrypy.Tool):
 
 def main():
     
-    logger = logging.getLogger("loader")
-    logging.config.fileConfig(os.path.dirname(__file__) + "conf/logging.conf")
-    
     parser = optparse.OptionParser()
-    parser.add_option("-c", "--conf", dest="conf", action="store", help="the path to the configuration file")
+    parser.add_option("-c", "--conf", dest="conf", action="store", help="the path to the server configuration file")
+    parser.add_option("-l", "--log", dest="log", action="store", help="the path to the logging configuration file")
+    
     (options, args) = parser.parse_args()
-    if options.conf == None: sys.exit("Please supply a --conf parameter.")
+    if options.conf == None: 
+        print ("Please supply a --conf parameter.\n")
+        sys.exit(parser.print_help())
+        
+    if options.log == None: 
+        print ("Please supply a --log parameter.\n")
+        sys.exit(parser.print_help())
+    
+    logging.config.fileConfig(options.log)
+    logger = logging.getLogger("loader")
     
     # the object construction tree defines the URL paths
     root = Root()
