@@ -282,7 +282,12 @@ def main():
     import ropy.alchemy.sqlalchemy_tool
     cherrypy.tools.PGTransaction = PGTransaction()
     
+    print cherrypy.config.get('server.environment')
+    
     cherrypy.quickstart(root, "/", options.conf)
+    
+    
+    
     
 
 if __name__ == '__main__':
