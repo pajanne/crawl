@@ -256,6 +256,7 @@ def main():
         print ("Please supply a --log parameter.\n")
         sys.exit(parser.print_help())
     
+    import logging
     logging.config.fileConfig(options.log)
     logger = logging.getLogger("loader")
     
@@ -282,7 +283,7 @@ def main():
     import ropy.alchemy.sqlalchemy_tool
     cherrypy.tools.PGTransaction = PGTransaction()
     
-    print cherrypy.config.get('server.environment')
+    # print cherrypy.config.get('server.environment')
     
     cherrypy.quickstart(root, "/", options.conf)
     
