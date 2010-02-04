@@ -2,27 +2,20 @@ import cherrypy
 import optparse
 import os
 import sys
+
 import logging
 import logging.config
-import logging.handlers
-
-from logging.config import fileConfig
+# import logging.handlers
+# from logging.config import fileConfig
 
 import ropy
-
-from api.api import FeatureAPI, OrganismAPI
 from ropy.server import RopyServer, RESTController, Root, handle_error, error_page_default
-
 from ropy.query import ConnectionFactory
-
 from ropy.alchemy.automapped import *
 
+from api.api import FeatureAPI, OrganismAPI
+
 logger = logging.getLogger("charpy")
-
-
-
-
-
 
 
 class FeatureController(RESTController):
@@ -259,7 +252,7 @@ def main():
         sys.exit(parser.print_help())
     
     
-    fileConfig(str(options.log))
+    logging.config.fileConfig(str(options.log))
     logger = logging.getLogger("loader")
     
     # the object construction tree defines the URL paths
@@ -269,8 +262,6 @@ def main():
     root.sourcefeatures = SourceFeatureController()
     
     cherrypy.config.update({
-        'server.socket_host': '0.0.0.0',
-        'server.socket_port': 6666,
         'request.error_response' : handle_error,
         'error_page.default' : error_page_default
     })
@@ -282,7 +273,7 @@ def main():
     import ropy.alchemy.sqlalchemy_tool
     cherrypy.tools.PGTransaction = PGTransaction()
     
-    # print cherrypy.config.get('server.environment')
+    cherrypy.log.access_log.setLevel(logging.DEBUG)
     
     cherrypy.quickstart(root, "/", options.conf)
     
