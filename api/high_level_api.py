@@ -79,14 +79,14 @@ class FeatureAPI(object):
         
         return data
     
-    def getFeatureLoc(self, sourceFeatureUniqueName, start, end, relationships, root_types):
+    def getFeatureLoc(self, sourceFeatureUniqueName, start, end, relationships):
         sourceFeatureID = self.api.getFeatureID(sourceFeatureUniqueName)
         
         relationship_ids = []
         for relationship in relationships:
             relationship_ids.append(self.api.getCvtermID("relationship", relationship))
         
-        featurelocs = self.api.getFeatureLocs(sourceFeatureID, start, end, relationship_ids, root_types)
+        featurelocs = self.api.getFeatureLocs(sourceFeatureID, start, end, relationship_ids)
         
         data = {
             "response" : {

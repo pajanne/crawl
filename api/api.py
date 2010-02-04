@@ -95,13 +95,12 @@ class WhatsNew(QueryProcessor):
         rows = self.runQuery("get_cvterm_id", args)
         return rows[0][0]
     
-    def getFeatureLocs(self, source_feature_id, start, end, relationships, root_types):
+    def getFeatureLocs(self, source_feature_id, start, end, relationships):
         args = {
             "sourcefeatureid": source_feature_id,
             "start":start,
             "end":end,
             "relationships":tuple(relationships), # must convert arrays to tuples
-            "root_types" : tuple(root_types) 
         }
         rows = self.runQueryAndMakeDictionary("feature_locs", args)
         

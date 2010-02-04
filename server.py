@@ -11,7 +11,8 @@ from logging.config import fileConfig
 import ropy
 
 from api.high_level_api import FeatureAPI, OrganismAPI
-from ropy.server import RopyServer, RESTController, Root
+from ropy.server import RopyServer, RESTController, Root, handle_error, error_page_default
+
 from ropy.query import ConnectionFactory
 
 from ropy.alchemy.automapped import *
@@ -108,20 +109,17 @@ class SourceFeatureController(RESTController):
         self.init_handler()
         
         relationships = ["part_of", "derives_from"]
-        root_types = ["gene", "pseudogene"]
         
         relationships = self._make_array_from_kwargs("relationships", ["part_of", "derives_from"], **kwargs)
-        root_types = self._make_array_from_kwargs("root_types", ["gene", "pseudogene"], **kwargs)
         
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
-        data = self.api.getFeatureLoc(uniqueName, start, end, relationships, root_types)
+        data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
         return self.format(data, "featureloc");
     featureloc.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
         "end" : "the end position of the features locations that you wish to retrieve (counting from 1)",
-        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
-        "root_types" : "an optional array (i.e. it can be specified several times) specifying what kinds of root features you would like, the defaults are [gene, pseudogene]"
+        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]"
     }
     
     
@@ -270,14 +268,11 @@ def main():
     root.organisms = OrganismController()
     root.sourcefeatures = SourceFeatureController()
     
-    import ropy
-    import ropy.server
-    
     cherrypy.config.update({
         'server.socket_host': '0.0.0.0',
         'server.socket_port': 6666,
-        'request.error_response' : ropy.server.handle_error,
-        'error_page.default' : ropy.server.error_page_default
+        'request.error_response' : handle_error,
+        'error_page.default' : error_page_default
     })
     
     cherrypy.engine.subscribe('start_thread', setup_connection)

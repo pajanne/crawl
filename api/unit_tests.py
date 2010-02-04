@@ -49,7 +49,7 @@ class BusinessTests(unittest.TestCase):
         self.whats_new = WhatsNew(connectionFactory)
     
     def testGetSourceFeatureSequence(self):
-        data = self.whats_new.getFeatureLocs(1, 1, 100000, [42, 69], ["gene", "pseudogene"])
+        data = self.whats_new.getFeatureLocs(1, 1, 100000, [42, 69])
         formatter = Formatter(data)
         # print formatter.formatJSON()
     
