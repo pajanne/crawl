@@ -13,8 +13,6 @@ Herein lies a server built on Ropy (which itself strings together
 CherryPy, Cheetah and psycopg2), allowing rapid prototyping 
 of chado-related queries. 
 
-It is run using the charpy.sh script.
-
-Requires Python 2.6.
+Requires Python 2.5+.
 
 PS - the fontage above is http://www.network-science.de/ascii/ | colossal.
