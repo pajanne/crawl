@@ -1,0 +1,11 @@
+
+[Connection]
+host : 'localhost'
+database : 'mydb'
+user : 'me'
+password : '123'
+
+[/]
+tools.SATransaction.dburi : 'postgres://me:123@localhost/mydb'
+
+

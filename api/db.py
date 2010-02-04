@@ -61,7 +61,9 @@ class Queries(QueryProcessor):
             raise ServerException("Could not find organism for taxonID " + taxonID, RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
     
     def getGenesWithPrivateAnnotationChanges(self, organism_id, since):
+        print organism_id
         returned = self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
+        print returned
         sinceDate = time.strptime(since,"%Y-%m-%d")
         results = []
         for result in returned:

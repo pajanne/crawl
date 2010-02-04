@@ -42,8 +42,10 @@ class FeatureAPI(object):
     
     def annotation_changes(self, taxonID, since):
         organism_id = self.queries.getOrganismFromTaxon(taxonID)
-        
+        print organism_id
         rows = self.queries.getGenesWithPrivateAnnotationChanges(organism_id, since)
+        
+        print rows
         
         data = {
             "response" : {
