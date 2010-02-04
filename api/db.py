@@ -44,6 +44,7 @@ class Queries(QueryProcessor):
         self.addQueryFromFile("get_cvterm_id", "get_cvterm_id.sql")
         
         self.addQueryFromFile("get_top_level", "get_top_level.sql")
+        self.addQueryFromFile("get_top_level_type_id", "get_top_level_type_id.sql")
         
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
@@ -106,8 +107,13 @@ class Queries(QueryProcessor):
         
         return rows
     
+    def getTopLevelTypeID(self):
+        rows = self.runQueryExpectingSingleRow("get_top_level_type_id")
+        return rows[0][0]
+    
     def getTopLevel(self, organism_id):
-        rows = self.runQuery("get_top_level", (organism_id, ))
+        top_level_type = self.getTopLevelTypeID()
+        rows = self.runQuery("get_top_level", (organism_id, top_level_type))
         
         results = []
         for r in rows:
