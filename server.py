@@ -10,7 +10,7 @@ from logging.config import fileConfig
 
 import ropy
 
-from api.high_level_api import FeatureAPI, OrganismAPI
+from api.api import FeatureAPI, OrganismAPI
 from ropy.server import RopyServer, RESTController, Root, handle_error, error_page_default
 
 from ropy.query import ConnectionFactory

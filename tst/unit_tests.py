@@ -15,7 +15,7 @@ import unittest
 import optparse
 
 
-from api import WhatsNew
+from charpy.api.db import Queries
 
 import ropy.query
 from ropy.client import RopyClient, ServerReportedException
@@ -46,17 +46,17 @@ connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
 class BusinessTests(unittest.TestCase):
     
     def setUp(self):
-        self.whats_new = WhatsNew(connectionFactory)
+        self.queries = Queries(connectionFactory)
     
     def testGetSourceFeatureSequence(self):
-        data = self.whats_new.getFeatureLocs(1, 1, 100000, [42, 69])
+        data = self.queries.getFeatureLocs(1, 1, 100000, [42, 69])
         formatter = Formatter(data)
         # print formatter.formatJSON()
     
     def testGetTopLevel(self):
         taxonomy_id = 420245
         
-        data = self.whats_new.getTopLevel(14)
+        data = self.queries.getTopLevel(14)
         formatter = Formatter(data)
         print formatter.formatJSON()
     
@@ -64,13 +64,13 @@ class BusinessTests(unittest.TestCase):
 class BusinessTests2(unittest.TestCase):
     
     def setUp(self):
-        self.whats_new = WhatsNew(connectionFactory)
+        self.queries = Queries(connectionFactory)
     
     def testAllChanged(self):
             since = "2009-06-01"
             organism_id = 14
             taxonomy_id = 420245
-            changed_features = self.whats_new.getAllChangedFeaturesForOrganism(since, organism_id)
+            changed_features = self.queries.getAllChangedFeaturesForOrganism(since, organism_id)
         
             data = {
                 "response" : {
@@ -87,12 +87,12 @@ class BusinessTests2(unittest.TestCase):
             formatter.formatXML("changes.xml.tpl")
         
     def testGetOrganismFromTaxon(self):
-        taxonID = self.whats_new.getOrganismFromTaxon('420245')
+        taxonID = self.queries.getOrganismFromTaxon('420245')
         self.assertEquals(taxonID, 14)
     
     def testGetGenesWithPrivateAnnotationChanges(self):
         since = "2009-06-01"
-        rows = self.whats_new.getGenesWithPrivateAnnotationChanges(14, since)
+        rows = self.queries.getGenesWithPrivateAnnotationChanges(14, since)
     
         data = {
             "response" : {
@@ -111,7 +111,7 @@ class BusinessTests2(unittest.TestCase):
     def testAllOrganisms(self):
         since = "2009-06-01"
     
-        organism_list = self.whats_new.getAllOrganismsAndTaxonIDs()
+        organism_list = self.queries.getAllOrganismsAndTaxonIDs()
     
         organismIDs = []
         organismHash = {}
@@ -120,7 +120,7 @@ class BusinessTests2(unittest.TestCase):
             organismIDs.append(organism_details["organism_id"])
             organismHash [organism_details["organism_id"]] = organism_details
     
-        counts = self.whats_new.countAllChangedFeaturesForOrganisms(since, organismIDs)
+        counts = self.queries.countAllChangedFeaturesForOrganisms(since, organismIDs)
     
         for count in counts:
             organismID = str(count[0])
@@ -144,12 +144,12 @@ class BusinessTests2(unittest.TestCase):
         since = "2009-06-01"
         organismIDs = [12, 14, 15, 20]
     
-        result = self.whats_new.countAllChangedFeaturesForOrganisms(since, organismIDs)
+        result = self.queries.countAllChangedFeaturesForOrganisms(since, organismIDs)
         print result
     
     
     def testGetSourceFeatureSequence(self):
-        rows = self.whats_new.getSourceFeatureSequence("Pf3D7_01")
+        rows = self.queries.getSourceFeatureSequence("Pf3D7_01")
         row = rows[0]
         
         length = row["length"]
@@ -175,11 +175,11 @@ class BusinessTests2(unittest.TestCase):
         print formatter.formatJSON()
 
     def testGetFeatureLocs(self):
-        json_data = self.whats_new.getFeatureLocs(1, 1, 10000, [42, 69], ["gene", "pseudogene"])
+        json_data = self.queries.getFeatureLocs(1, 1, 10000, [42, 69])
         print  json.dumps(json_data, sort_keys=True, indent=4)
         
     def testGetID(self):
-        print self.whats_new.getFeatureID("Pf3D7_01")
+        print self.queries.getFeatureID("Pf3D7_01")
 
 class ClientServerTests(unittest.TestCase):
     
@@ -224,9 +224,6 @@ class ClientServerTests(unittest.TestCase):
             self.fail("should throw a server reported exception")
     
     
-
-def main():
-	pass
 
 
 if __name__ == '__main__':
