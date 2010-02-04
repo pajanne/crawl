@@ -5,16 +5,16 @@
 
 [Connection]
 host : "localhost"
-database : "pathogens"
-user : "pathdb"
-password : "pathdb"
+database : "mydb"
+user : "me"
+password : "123"
 
 
 
 [/]
 
 tools.SATransaction.on = True
-tools.SATransaction.dburi = 'postgres://pathdb:pathdb@localhost/pathogens'
+tools.SATransaction.dburi = 'postgres://me:123@localhost/mydb'
 tools.SATransaction.echo = False           # this is the default
 tools.SATransaction.convert_unicode = True # this is the default
 
