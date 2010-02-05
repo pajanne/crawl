@@ -15,7 +15,7 @@ from cherrypy.process import plugins
 import ropy
 from ropy.server import RopyServer, Root, handle_error, error_page_default, generate_mappings
 from ropy.query import ConnectionFactory
-from ropy.alchemy.automapped import *
+# from ropy.alchemy.automapped import *
 
 import api.controllers
 
@@ -117,7 +117,7 @@ def main():
     cherrypy.engine.subscribe('stop_thread', close_connection)
     
     # import the tools before starting the server
-    import ropy.alchemy.sqlalchemy_tool
+    # import ropy.alchemy.sqlalchemy_tool
     import ropy.psy.psycopg2_tool
     
     # cherrypy.log.access_log.setLevel(logging.DEBUG)
