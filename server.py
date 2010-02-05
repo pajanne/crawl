@@ -69,7 +69,11 @@ def main():
             parser.print_help()
             sys.exit()
     
-    logging.config.fileConfig(options.logconf, disable_existing_loggers=False)
+    try:
+        logging.config.fileConfig(options.logconf, disable_existing_loggers=False)
+    except Exception, e:
+        print "Warning: could not setup logging with disable_existing_loggers=False flag."
+        logging.config.fileConfig(options.logconf)
     
     # make a tree of controller instances
     root = Root()
