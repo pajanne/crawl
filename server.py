@@ -103,11 +103,11 @@ def main():
     # app specific settings
     appconfig = {
         '/' : {
-            'request.dispatch' : mapper,
-            'tools.SATransaction.on' : True,
-            'tools.SATransaction.echo' : False,
-            'tools.SATransaction.convert_unicode' : True,
-            'tools.PGTransaction.on' : True
+            'request.dispatch' : mapper #,
+            # 'tools.SATransaction.on' : True,
+            # 'tools.SATransaction.echo' : False,
+            # 'tools.SATransaction.convert_unicode' : True,
+            # 'tools.PGTransaction.on' : True
         }
     }
     
