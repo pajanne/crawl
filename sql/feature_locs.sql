@@ -25,24 +25,23 @@ SELECT
 FROM feature f
 
 LEFT JOIN cvterm cv ON f.type_id = cv.cvterm_id
-LEFT JOIN featureloc fl ON f.feature_id = fl.feature_id
+LEFT JOIN featureloc fl ON (f.feature_id = fl.feature_id AND fl.srcfeature_id = %(sourcefeatureid)s )
 
 LEFT JOIN feature_relationship nfr ON (f.feature_id = nfr.subject_id AND (nfr.type_id in %(relationships)s ))
 
 LEFT OUTER JOIN feature_relationship fr ON (f.feature_id = fr.object_id AND (fr.type_id in %(relationships)s ))
 LEFT OUTER JOIN feature f2 ON fr.subject_id = f2.feature_id
 LEFT OUTER JOIN cvterm cv2 ON f2.type_id = cv2.cvterm_id
-LEFT OUTER JOIN featureloc fl2 ON f2.feature_id = fl2.feature_id
+LEFT OUTER JOIN featureloc fl2 ON (f2.feature_id = fl2.feature_id AND fl2.srcfeature_id = %(sourcefeatureid)s )
 LEFT OUTER JOIN cvterm flt on fr.type_id = flt.cvterm_id
 
 LEFT OUTER JOIN feature_relationship fr2 ON (f2.feature_id = fr2.object_id AND (fr2.type_id in %(relationships)s ))
 LEFT OUTER JOIN feature f3 ON fr2.subject_id = f3.feature_id
 LEFT OUTER JOIN cvterm cv3 ON f3.type_id = cv3.cvterm_id
-LEFT OUTER JOIN featureloc fl3 ON f3.feature_id = fl3.feature_id
+LEFT OUTER JOIN featureloc fl3 ON (f3.feature_id = fl3.feature_id AND fl3.srcfeature_id = %(sourcefeatureid)s )
 LEFT OUTER JOIN cvterm flt2 on fr2.type_id = flt2.cvterm_id
 
-WHERE fl.srcfeature_id = %(sourcefeatureid)s
-AND nfr.subject_id IS NULL
+WHERE nfr.subject_id IS NULL
 
 AND ( 
     (fl.fmin BETWEEN %(start)s AND %(end)s ) 
