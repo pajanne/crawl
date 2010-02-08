@@ -59,6 +59,7 @@ def main():
     parser.add_option("-l", "--logconf", dest="logconf", action="store", help="the path to the logging configuration file")
     parser.add_option('-d', action="store_true", dest='daemonize', help="run as daemon")
     parser.add_option('-p', '--pidfile', dest='pidfile', default=None, help="store the process id in the given file")
+    parser.add_option('-t', '--test', dest='test', action="store_true", default=False, help="switch on testing controllers")
     
     
     (options, args) = parser.parse_args()
@@ -80,6 +81,9 @@ def main():
     root.genes = api.controllers.FeatureController()
     root.organisms = api.controllers.OrganismController()
     root.sourcefeatures = api.controllers.SourceFeatureController()
+    
+    if options.test == True:
+        root.testing = api.controllers.TestController()
     
     # we want to use a custom dispatcher that's configured to know about .json and .xml extensions
     mapper = cherrypy.dispatch.RoutesDispatcher()
@@ -103,11 +107,11 @@ def main():
     # app specific settings
     appconfig = {
         '/' : {
-            'request.dispatch' : mapper #,
+            'request.dispatch' : mapper,
             # 'tools.SATransaction.on' : True,
             # 'tools.SATransaction.echo' : False,
             # 'tools.SATransaction.convert_unicode' : True,
-            # 'tools.PGTransaction.on' : True
+            'tools.PGTransaction.on' : True
         }
     }
     

@@ -26,7 +26,7 @@ class FeatureController(RESTController):
     """
     
     def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "tpl/"
+        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
         self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
@@ -78,7 +78,7 @@ class SourceFeatureController(RESTController):
     """
     
     def __init__(self):
-       self.templateFilePath = os.path.dirname(__file__) + "tpl/"
+       self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
        self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
@@ -153,7 +153,7 @@ class OrganismController(RESTController):
     """
     
     def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "tpl/"
+        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
         self.api = OrganismAPI(cherrypy.thread_data.connectionFactory)
@@ -182,4 +182,48 @@ class OrganismController(RESTController):
         data = self.api.getAllOrganismsAndTaxonIDs()
         return self.format(data)
     list.arguments = {}
+    
+
+
+
+class TestController(RESTController):
+    """
+        Test related queries.
+    """
+
+    def __init__(self):
+        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
+
+    def init_handler(self):
+        self.api = OrganismAPI(cherrypy.thread_data.connectionFactory)
+        super(TestController, self).init_handler()
+
+    
+    @cherrypy.expose
+    @jsonp
+    def forceclose(self):
+        """
+            Forces the connection to be closed for testing.
+        """
+        self.init_handler()
+        cherrypy.thread_data.connectionFactory.getSingleConnection().close()
+        
+        data = {
+            "response" : {
+                "closed" : "true"
+            }
+        }
+        return self.format(data)
+    forceclose.arguments = {}
+    
+    @cherrypy.expose
+    @jsonp
+    def test(self):
+        """
+            Runs a query.
+        """
+        self.init_handler()
+        data = self.api.getAllOrganismsAndTaxonIDs()
+        return self.format(data)
+    test.arguments = {}
     
