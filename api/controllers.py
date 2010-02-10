@@ -74,7 +74,18 @@ class FeatureController(ropy.server.RESTController):
     top.arguments = {
         "taxonID" : "the taxonID of the organism you want to browse"
     }
-
+    
+    
+    @cherrypy.expose
+    @ropy.server.service
+    def featureproperties(self, uniqueName):
+        data = self.api.getFeatureProps(uniqueName)
+        return self.format(data)
+    
+    featureproperties.arguments = {
+        "uniqueName" : "the uniqueName of the feature whose properties you're after"
+    }
+    
 
 class SourceFeatureController(ropy.server.RESTController):
     """

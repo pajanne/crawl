@@ -45,6 +45,8 @@ class Queries(QueryProcessor):
         
         self.addQueryFromFile("get_top_level", "get_top_level.sql")
         self.addQueryFromFile("get_top_level_type_id", "get_top_level_type_id.sql")
+        self.addQueryFromFile("get_featureprop", "get_featureprop.sql")
+        
         
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
@@ -131,6 +133,10 @@ class Queries(QueryProcessor):
             logger.error(e)
             se = ServerException("Could not find a feature with uniqueName of " + uniqueName + ".", ERROR_CODES["DATA_NOT_FOUND"])
             raise ServerException, se
+    
+    def getFeatureProps(self, feature_id):
+        return self.runQueryAndMakeDictionary("get_featureprop",  {"featureid" : feature_id })
+
     
     def validateDate(self, date):
         try:

@@ -180,7 +180,20 @@ class FeatureAPI(object):
        }
        
        return data
-
+    
+    def getFeatureProps(self, uniqueName):
+        feature_id = self.queries.getFeatureID(uniqueName)
+        data = self.queries.getFeatureProps(feature_id)
+        
+        data = {
+            "response" : {
+                "name" : "genes/featureproperties",
+                "uniqueName" : uniqueName,
+                "props" : data
+            }
+        }
+        return data
+    
 
 class OrganismAPI(object):
     
