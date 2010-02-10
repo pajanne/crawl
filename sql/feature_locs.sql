@@ -6,6 +6,9 @@ SELECT
 	fl.strand as l1_strand,
 	fl.phase as l1_phase,
 	fl.fmax - fl.fmin as l1_seqlen, 
+	f.is_obsolete as l1_is_obsolete,
+	f.feature_id as l1_feature_id,
+	
 	f2.uniqueName as l2_uniqueName, 
 	fl2.fmin as l2_fmin, 
 	fl2.fmax as l2_fmax, 
@@ -14,6 +17,9 @@ SELECT
 	fl2.phase as l2_phase,
 	fl2.fmax - fl2.fmin as l2_seqlen, 
 	flt.name as l2_reltype,
+	f2.is_obsolete as l2_is_obsolete,
+	f2.feature_id as l2_feature_id,
+	
 	f3.uniqueName as l3_uniqueName, 
 	fl3.fmin as l3_fmin, 
 	fl3.fmax as l3_fmax, 
@@ -21,7 +27,10 @@ SELECT
 	fl3.strand as l3_strand,
 	fl3.phase as l3_phase,
 	fl3.fmax - fl3.fmin as l3_seqlen,
-	flt2.name as l3_reltype
+	flt2.name as l3_reltype,
+	f3.is_obsolete as l3_is_obsolete,
+	f3.feature_id as l3_feature_id
+	
 FROM feature f
 
 LEFT JOIN cvterm cv ON f.type_id = cv.cvterm_id

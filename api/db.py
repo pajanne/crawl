@@ -109,6 +109,10 @@ class Queries(QueryProcessor):
         }
         rows = self.runQueryAndMakeDictionary("feature_locs", args)
         
+        # for r in rows:
+        #             import json
+        #             logger.debug(json.dumps(r, indent=4))
+        
         return rows
     
     def getTopLevelTypeID(self):

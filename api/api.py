@@ -112,13 +112,16 @@ class FeatureAPI(object):
                     "seqlen" : r["l1_seqlen"],
                     "relationship_type" : "",
                     "type" : r["l1_type"],
+                    "is_obsolete" : r["l1_is_obsolete"],
+                    "feature_id" : r["l1_feature_id"],
                     "parent" : "",
                     "features" : []
                 }
                 result_map[r['l1_uniquename']] = root
                 featurelocs.append(root)
             
-            if r['l2_uniquename'] != None: 
+            if r['l2_uniquename'] != "None": 
+                logger.debug(r['l2_uniquename'])
                 if r['l2_uniquename'] in result_map:
                     l2 = result_map[r['l2_uniquename']]
                 else:
@@ -131,13 +134,15 @@ class FeatureAPI(object):
                         "seqlen" : r["l2_seqlen"],
                         "relationship_type" : r["l2_reltype"],
                         "type" : r["l2_type"],
+                        "is_obsolete" : r["l2_is_obsolete"],
+                        "feature_id" : r["l2_feature_id"],
                         "parent" : root["uniquename"],
                         "features" : []
                     }
                     root["features"].append(l2)
                     result_map[r['l2_uniquename']] = l2
             
-            if r['l3_uniquename'] != None: 
+            if r['l3_uniquename'] != "None": 
                 if r['l3_uniquename'] in result_map:
                     l3 = result_map[r['l3_uniquename']]
                 else:
@@ -150,6 +155,8 @@ class FeatureAPI(object):
                         "seqlen" : r["l3_seqlen"],
                         "relationship_type" : r["l3_reltype"],
                         "type" : r["l3_type"],
+                        "is_obsolete" : r["l2_is_obsolete"],
+                        "feature_id" : r["l2_feature_id"],
                         "parent" : l2["uniquename"],
                         "features" : []
                     }
