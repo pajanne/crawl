@@ -6,22 +6,19 @@ import sys
 import logging
 import logging.config
 
-# import logging.handlers
-# from logging.config import fileConfig
-
 import cherrypy
 from cherrypy.process import plugins
 
 import ropy
-from ropy.server import RopyServer, Root, handle_error, error_page_default, generate_mappings
+from ropy.server import Root, handle_error, error_page_default, generate_mappings
 from ropy.query import ConnectionFactory
-# from ropy.alchemy.automapped import *
+
 
 import api.controllers
 
 logger = logging.getLogger("charpy")
 
-# note, should these two listeners might be moved into the ropy.server module?
+# note, should these two listeners might be moved into the ropy.server module? the setup depends on cherrypy.config['Connection'], which may be considered to be an app specific setting.
 def setup_connection(thread_index):
     """
         make one connection per thread at startup
@@ -34,7 +31,7 @@ def setup_connection(thread_index):
     password = connection_details["password"]
 
     cherrypy.thread_data.connectionFactory = ConnectionFactory(host, database, user, password)
-    logger.info ("setup connection in thread " + str(thread_index) + " ... is in thread_data? " + str(hasattr(cherrypy.thread_data, "connectionFactory")) )
+    logger.debug ("setup connection in thread " + str(thread_index) + " ... is in thread_data? " + str(hasattr(cherrypy.thread_data, "connectionFactory")) )
 
 
 def close_connection(thread_index):
@@ -45,7 +42,7 @@ def close_connection(thread_index):
     if hasattr(cherrypy.thread_data, "connectionFactory"):
         cherrypy.thread_data.connectionFactory.closeConnection()
     else:
-        logger.info ("no connection to close in thread " + str(thread_index))
+        logger.debug ("no connection to close in thread " + str(thread_index))
 
 
 

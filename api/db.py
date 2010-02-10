@@ -18,7 +18,7 @@ import time
 import logging
 
 from ropy.query import QueryProcessor
-from ropy.server import ServerException, RopyServer
+from ropy.server import ServerException, ERROR_CODES
 
 logger = logging.getLogger("charpy")
 
@@ -58,7 +58,7 @@ class Queries(QueryProcessor):
             # return the first value of the first row... 
             return rows[0][0]
         except:
-            raise ServerException("Could not find organism for taxonID " + taxonID, RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
+            raise ServerException("Could not find organism for taxonID " + taxonID, ERROR_CODES["DATA_NOT_FOUND"])
     
     def getGenesWithPrivateAnnotationChanges(self, organism_id, since):
         print organism_id
@@ -129,7 +129,7 @@ class Queries(QueryProcessor):
             return rows[0][0]
         except Exception, e:
             logger.error(e)
-            se = ServerException("Could not find a feature with uniqueName of " + uniqueName + ".", RopyServer.ERROR_CODES["DATA_NOT_FOUND"])
+            se = ServerException("Could not find a feature with uniqueName of " + uniqueName + ".", ERROR_CODES["DATA_NOT_FOUND"])
             raise ServerException, se
     
     def validateDate(self, date):
@@ -138,7 +138,7 @@ class Queries(QueryProcessor):
         except Exception, e:
             # print "date " + date
             logger.error(e)
-            se = ServerException("Invalid date: please supply a valid date markes in 'YYYY-MM-DD' format.", RopyServer.ERROR_CODES["INVALID_DATE"])
+            se = ServerException("Invalid date: please supply a valid date markes in 'YYYY-MM-DD' format.", ERROR_CODES["INVALID_DATE"])
             raise ServerException, se
 
 

@@ -15,12 +15,12 @@ import logging
 
 logger = logging.getLogger("charpy.controllers")
 
-from ropy.server import RESTController, jsonp
-from api import FeatureAPI, OrganismAPI
+import ropy.server
+import api
 
 
 
-class FeatureController(RESTController):
+class FeatureController(ropy.server.RESTController):
     """
         Feature related queries.
     """
@@ -29,50 +29,54 @@ class FeatureController(RESTController):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
-        self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
+        self.api = api.FeatureAPI(cherrypy.thread_data.connectionFactory)
         super(FeatureController, self).init_handler()
     
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def changes(self, since, taxonomyID):
         """
             Reports all the features that have changed since a certain date.
         """
-        self.init_handler()
         data = self.api.changes(since, taxonomyID)
-        return self.format(data, "changes");
-    changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID"  }
+        return self.format(data, "changes")
     
+    changes.arguments = { 
+        "since" : "date formatted as YYYY-MM-DD", 
+        "taxonomyID" : "the NCBI taxonomy ID"  
+    }
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def annotation_changes(self, taxonomyID, since):
         """
             Reports all the genes that have been highlighted as having annotation changes.
         """
-        self.init_handler()
         data = self.api.annotation_changes(taxonomyID, since)
-        return self.format(data, "private_annotations");
-    annotation_changes.arguments = { "since" : "date formatted as YYYY-MM-DD", "taxonomyID" : "the NCBI taxonomy ID" }
+        return self.format(data, "private_annotations")
+    
+    annotation_changes.arguments = { 
+        "since" : "date formatted as YYYY-MM-DD", 
+        "taxonomyID" : "the NCBI taxonomy ID" 
+    }
     
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def top(self, taxonID):
         """
             Returns a list of top level features for an organism.
         """
-        self.init_handler()
-        
         data = self.api.getTopLevel(taxonID)
         return self.format(data)
+    
     top.arguments = {
         "taxonID" : "the taxonID of the organism you want to browse"
     }
 
 
-class SourceFeatureController(RESTController):
+class SourceFeatureController(ropy.server.RESTController):
     """
         Source feature related queries.
     """
@@ -81,19 +85,19 @@ class SourceFeatureController(RESTController):
        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
-       self.api = FeatureAPI(cherrypy.thread_data.connectionFactory)
-       super(SourceFeatureController, self).init_handler()
-       
+        self.api = api.FeatureAPI(cherrypy.thread_data.connectionFactory)
+        super(SourceFeatureController, self).init_handler()
+    
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def sequence(self, uniqueName, start, end):
         """
             Returns the sequence of a source feature.
         """
-        self.init_handler()
         data = self.api.getSoureFeatureSequence(uniqueName, start, end)
-        return self.format(data, "source_feature_sequence");
+        return self.format(data, "source_feature_sequence")
+    
     sequence.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position in the sequence that you wish to retrieve (counting from 1)",
@@ -102,20 +106,17 @@ class SourceFeatureController(RESTController):
     
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def featureloc(self, uniqueName, start, end, **kwargs):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
         """
-        self.init_handler()
-        
         relationships = ["part_of", "derives_from"]
-        
         relationships = self._make_array_from_kwargs("relationships", ["part_of", "derives_from"], **kwargs)
-        
-        logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
+        # logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
         data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
-        return self.format(data, "featureloc");
+        return self.format(data, "featureloc")
+        
     featureloc.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
@@ -147,7 +148,7 @@ class SourceFeatureController(RESTController):
     #             s.append(db.name + "\n")
     #         return s
 
-class OrganismController(RESTController):
+class OrganismController(ropy.server.RESTController):
     """
         Organism related queries.
     """
@@ -156,37 +157,37 @@ class OrganismController(RESTController):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
-        self.api = OrganismAPI(cherrypy.thread_data.connectionFactory)
+        self.api = api.OrganismAPI(cherrypy.thread_data.connectionFactory)
         super(OrganismController, self).init_handler()
     
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def changes(self, since):
         """
             Reports all the organisms, their taxononmyIDs and a count of how many features have changed since a certain date.
         """
-        self.init_handler()
         data = self.api.changes(since)
-        return self.format(data, "genomes_changed");
+        return self.format(data, "genomes_changed")
+        
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }
     
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def list(self):
         """
             Lists all organisms and their taxonomyIDs. 
         """
-        self.init_handler()
         data = self.api.getAllOrganismsAndTaxonIDs()
         return self.format(data)
+    
     list.arguments = {}
     
 
 
 
-class TestController(RESTController):
+class TestController(ropy.server.RESTController):
     """
         Test related queries.
     """
@@ -195,35 +196,34 @@ class TestController(RESTController):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
 
     def init_handler(self):
-        self.api = OrganismAPI(cherrypy.thread_data.connectionFactory)
+        self.api = api.OrganismAPI(cherrypy.thread_data.connectionFactory)
         super(TestController, self).init_handler()
 
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def forceclose(self):
         """
             Forces the connection to be closed for testing.
         """
-        self.init_handler()
         cherrypy.thread_data.connectionFactory.getSingleConnection().close()
-        
         data = {
             "response" : {
                 "closed" : "true"
             }
         }
         return self.format(data)
+    
     forceclose.arguments = {}
     
     @cherrypy.expose
-    @jsonp
+    @ropy.server.service
     def test(self):
         """
             Runs a query.
         """
-        self.init_handler()
         data = self.api.getAllOrganismsAndTaxonIDs()
         return self.format(data)
+    
     test.arguments = {}
     
