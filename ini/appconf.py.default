@@ -4,6 +4,7 @@ host : 'localhost'
 database : 'mydb'
 user : 'me'
 password : '123'
+port : '5432'
 
 [/]
 tools.SATransaction.dburi : 'postgres://me:123@localhost/mydb'
