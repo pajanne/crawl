@@ -31,7 +31,7 @@ def setup_connection(thread_index):
     password = connection_details["password"]
     port = connection_details["port"]
 
-    cherrypy.thread_data.connectionFactory = ConnectionFactory(host, database, user, password)
+    cherrypy.thread_data.connectionFactory = ConnectionFactory(host, database, user, password, port)
     logger.debug ("setup connection in thread " + str(thread_index) + " ... is in thread_data? " + str(hasattr(cherrypy.thread_data, "connectionFactory")) )
 
 
