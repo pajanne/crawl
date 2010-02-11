@@ -138,8 +138,8 @@ class Queries(QueryProcessor):
             se = ServerException("Could not find a feature with uniqueName of " + uniqueName + ".", ERROR_CODES["DATA_NOT_FOUND"])
             raise ServerException, se
     
-    def getFeatureProps(self, feature_id):
-        return self.runQueryAndMakeDictionary("get_featureprop",  {"featureid" : feature_id })
+    def getFeatureProps(self, uniqueNames):
+        return self.runQueryAndMakeDictionary("get_featureprop",  {"uniquenames" : tuple(uniqueNames) })
 
     
     def validateDate(self, date):

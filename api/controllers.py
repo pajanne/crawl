@@ -78,8 +78,11 @@ class FeatureController(ropy.server.RESTController):
     
     @cherrypy.expose
     @ropy.server.service
-    def featureproperties(self, uniqueName):
-        data = self.api.getFeatureProps(uniqueName)
+    def featureproperties(self, **kwargs):
+        uniqueNames = self._make_array_from_kwargs("uniqueName", None, **kwargs)
+        if uniqueNames == None:
+            raise ropy.server.ServerException("Please provide at least one uniqueName parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+        data = self.api.getFeatureProps(uniqueNames)
         return self.format(data)
     
     featureproperties.arguments = {
@@ -139,15 +142,7 @@ class SourceFeatureController(ropy.server.RESTController):
     
     
     
-    def _make_array_from_kwargs(self, kw, default_array, **kwargs):
-        import types
-        if kw in kwargs:
-            arr = kwargs[kw]
-            if type(arr) is not types.ListType:
-                arr = [arr]
-        else:
-            arr = default_array
-        return arr
+    
     
     # use example of how to make an alchemy controller...
     # @cherrypy.expose
