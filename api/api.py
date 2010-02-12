@@ -192,20 +192,29 @@ class FeatureAPI(object):
         
         results = self.queries.getFeatureProps(uniquenames)
         
-        props = {}
+        prop_dict = {}
+        prop_list = []
         
         for r in results:
-            
-            if r["uniquename"] not in props:
-                props[r["uniquename"]] = []
-            
             uniquename = r.pop("uniquename")
-            props[uniquename].append(r)
+            
+            if uniquename not in prop_dict:
+                prop_dict[uniquename] = {
+                    "uniquename" : uniquename,
+                    "props" : []
+                }
+                prop_list.append(prop_dict[uniquename])
+            
+            this_feature_prop = prop_dict[uniquename]
+            this_feature_prop["props"].append(r)
+            
+        
+        prop_dict = None
         
         data = {
             "response" : {
                 "name" : "genes/featureproperties",
-                "props" : props
+                "features" : prop_list
             }
         }
         return data
