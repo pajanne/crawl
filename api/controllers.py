@@ -79,14 +79,28 @@ class FeatureController(ropy.server.RESTController):
     @cherrypy.expose
     @ropy.server.service
     def featureproperties(self, **kwargs):
-        uniqueNames = self._make_array_from_kwargs("uniqueName", None, **kwargs)
-        if uniqueNames == None:
-            raise ropy.server.ServerException("Please provide at least one uniqueName parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+        logger.debug(kwargs)
+        
+        delimiter = kwargs["delimiter"] if "delimiter" in kwargs else ","
+        
+        uniqueNames = []
+        if "uniqueNames[]" in kwargs:
+            uniqueNames.extend(kwargs["uniqueNames[]"])
+        if "u[]" in kwargs:
+            uniqueNames.extend(kwargs["u[]"])
+        if "us" in kwargs:
+            uniqueNames.extend(kwargs["us"].split(delimiter))
+        
+        if len(uniqueNames) == 0: raise ropy.server.ServerException("Please provide at least one uniqueName / u / us parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+        
         data = self.api.getFeatureProps(uniqueNames)
         return self.format(data)
     
     featureproperties.arguments = {
-        "uniqueName" : "the uniqueName of the feature whose properties you're after"
+        "uniqueName" : "the uniqueName of the feature whose properties you're after",
+        "u" : "shorthand for the uniqueName parameter",
+        "us" : "a single string making up a list of uniqueNames, delimmited by the delimiter parameter",
+        "delimiter" : "instructs how to split strings, defaults to a comma(,)"
     }
     
 
