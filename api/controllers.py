@@ -34,13 +34,13 @@ class FeatureController(ropy.server.RESTController):
     
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format("changes")
     def changes(self, since, taxonomyID):
         """
             Reports all the features that have changed since a certain date.
         """
         data = self.api.changes(since, taxonomyID)
-        return self.format(data, "changes")
+        return data
     
     changes.arguments = { 
         "since" : "date formatted as YYYY-MM-DD", 
@@ -48,13 +48,13 @@ class FeatureController(ropy.server.RESTController):
     }
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format("private_annotations")
     def annotation_changes(self, taxonomyID, since):
         """
             Reports all the genes that have been highlighted as having annotation changes.
         """
         data = self.api.annotation_changes(taxonomyID, since)
-        return self.format(data, "private_annotations")
+        return data
     
     annotation_changes.arguments = { 
         "since" : "date formatted as YYYY-MM-DD", 
@@ -63,13 +63,13 @@ class FeatureController(ropy.server.RESTController):
     
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def top(self, taxonID):
         """
             Returns a list of top level features for an organism.
         """
         data = self.api.getTopLevel(taxonID)
-        return self.format(data)
+        return data
     
     top.arguments = {
         "taxonID" : "the taxonID of the organism you want to browse"
@@ -78,8 +78,11 @@ class FeatureController(ropy.server.RESTController):
     
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def featureproperties(self, **kwargs):
+        """
+            Returns featureprops for a given set of uniqueNames.
+        """
         
         # build the uniqueNames array from different possilble kwargs
         uniqueNames = ropy.server.get_array_from_kwargs("uniqueNames", **kwargs)
@@ -94,7 +97,7 @@ class FeatureController(ropy.server.RESTController):
         if len(uniqueNames) == 0: raise ropy.server.ServerException("Please provide at least one uniqueNames / u / us parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
         
         data = self.api.getFeatureProps(uniqueNames)
-        return self.format(data)
+        return data
     
     featureproperties.arguments = {
         "uniqueName" : "the uniqueName of the feature whose properties you're after",
@@ -118,13 +121,13 @@ class SourceFeatureController(ropy.server.RESTController):
     
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def sequence(self, uniqueName, start, end):
         """
             Returns the sequence of a source feature.
         """
         data = self.api.getSoureFeatureSequence(uniqueName, start, end)
-        return self.format(data, "source_feature_sequence")
+        return data
     
     sequence.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
@@ -134,7 +137,7 @@ class SourceFeatureController(ropy.server.RESTController):
     
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def featureloc(self, uniqueName, start, end, **kwargs):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
@@ -148,7 +151,7 @@ class SourceFeatureController(ropy.server.RESTController):
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
         
         data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
-        return self.format(data, "featureloc")
+        return data
         
     featureloc.arguments = { 
         "uniqueName" : "the uniqueName of the source feature" ,
@@ -187,25 +190,25 @@ class OrganismController(ropy.server.RESTController):
     
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def changes(self, since):
         """
             Reports all the organisms, their taxononmyIDs and a count of how many features have changed since a certain date.
         """
         data = self.api.changes(since)
-        return self.format(data, "genomes_changed")
+        return data
         
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }
     
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def list(self):
         """
             Lists all organisms and their taxonomyIDs. 
         """
         data = self.api.getAllOrganismsAndTaxonIDs()
-        return self.format(data)
+        return data
     
     list.arguments = {}
     
@@ -226,7 +229,7 @@ class TestController(ropy.server.RESTController):
 
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def forceclose(self):
         """
             Forces the connection to be closed for testing.
@@ -237,18 +240,18 @@ class TestController(ropy.server.RESTController):
                 "closed" : "true"
             }
         }
-        return self.format(data)
+        return data
     
     forceclose.arguments = {}
     
     @cherrypy.expose
-    @ropy.server.service
+    @ropy.server.service_format()
     def test(self):
         """
             Runs a query.
         """
         data = self.api.getAllOrganismsAndTaxonIDs()
-        return self.format(data)
+        return data
     
     test.arguments = {}
     
