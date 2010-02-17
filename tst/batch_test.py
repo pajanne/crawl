@@ -31,7 +31,10 @@ class BatchTest ( threading.Thread ):
         
         # print data.toprettyxml()
         response = data['response']
-        if "error" in response:
+        
+        try:
+            assert "error" not in response
+        except AssertionError, e:
             print json.dumps(data, indent=4)
         
 

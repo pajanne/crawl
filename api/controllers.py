@@ -76,22 +76,22 @@ class FeatureController(ropy.server.RESTController):
     }
     
     
+    
     @cherrypy.expose
     @ropy.server.service
     def featureproperties(self, **kwargs):
-        logger.debug(kwargs)
         
+        # build the uniqueNames array from different possilble kwargs
+        uniqueNames = ropy.server.get_array_from_kwargs("uniqueNames", **kwargs)
+        ropy.server.get_array_from_kwargs("u", uniqueNames, **kwargs)
+        
+        # special case of arrays being passed using the us parameter, with the delimiter
         delimiter = kwargs["delimiter"] if "delimiter" in kwargs else ","
+        if "us" in kwargs: uniqueNames.extend(kwargs["us"].split(delimiter))
         
-        uniqueNames = []
-        if "uniqueNames[]" in kwargs:
-            uniqueNames.extend(kwargs["uniqueNames[]"])
-        if "u[]" in kwargs:
-            uniqueNames.extend(kwargs["u[]"])
-        if "us" in kwargs:
-            uniqueNames.extend(kwargs["us"].split(delimiter))
+        logger.debug(uniqueNames)
         
-        if len(uniqueNames) == 0: raise ropy.server.ServerException("Please provide at least one uniqueName / u / us parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+        if len(uniqueNames) == 0: raise ropy.server.ServerException("Please provide at least one uniqueNames / u / us parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
         
         data = self.api.getFeatureProps(uniqueNames)
         return self.format(data)
@@ -139,9 +139,14 @@ class SourceFeatureController(ropy.server.RESTController):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
         """
-        relationships = ["part_of", "derives_from"]
-        relationships = self._make_array_from_kwargs("relationships", ["part_of", "derives_from"], **kwargs)
-        # logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
+        
+        relationships = ropy.server.get_array_from_kwargs("relationships")
+        if len(relationships) == 0: 
+            relationships = ["part_of", "derives_from"]
+        
+        logger.debug(relationships)
+        logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
+        
         data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
         return self.format(data, "featureloc")
         
