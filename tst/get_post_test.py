@@ -22,7 +22,7 @@ logging.config.fileConfig(os.path.dirname(__file__) + "/logging.conf")
 from ropy.client import RopyClient, ServerReportedException
 
 def main():
-    client = RopyClient("http://localhost:7777/")
+    client = RopyClient("http://localhost:6666/")
     
     # a POST request using the u array parameter
     parameters = {
