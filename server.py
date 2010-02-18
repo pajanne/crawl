@@ -121,9 +121,10 @@ def main():
     }
     
     appconfig2 = {
-        '/testing' : {
+        '/' : {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(current_dir, 'html/testing')
+            'tools.staticdir.index' : 'index.html',
+            'tools.staticdir.dir': os.path.join(current_dir, 'html/')
         }
     }
     
