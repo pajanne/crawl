@@ -84,9 +84,11 @@ class FeatureAPI(object):
     def getFeatureLoc(self, sourceFeatureUniqueName, start, end, relationships):
         sourceFeatureID = self.queries.getFeatureID(sourceFeatureUniqueName)
         
-        relationship_ids = []
-        for relationship in relationships:
-            relationship_ids.append(self.queries.getCvtermID("relationship", relationship))
+        relationship_ids = self.queries.getCvtermID("relationship", relationships)
+        if len(relationship_ids) == 0:
+            raise Exception("Could not find cvterms " + str(relationships) + " in the relationship cv.")
+        logger.debug(relationships)
+        logger.debug(relationship_ids)
         
         rows = self.queries.getFeatureLocs(sourceFeatureID, start, end, relationship_ids)
         
@@ -121,7 +123,7 @@ class FeatureAPI(object):
                 featurelocs.append(root)
             
             if r['l2_uniquename'] != "None": 
-                logger.debug(r['l2_uniquename'])
+                # logger.debug(r['l2_uniquename'])
                 if r['l2_uniquename'] in result_map:
                     l2 = result_map[r['l2_uniquename']]
                 else:

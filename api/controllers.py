@@ -13,7 +13,7 @@ import cherrypy
 
 import logging
 
-logger = logging.getLogger("charpy.controllers")
+logger = logging.getLogger("charpy")
 
 import ropy.server
 import api
@@ -85,8 +85,10 @@ class FeatureController(ropy.server.RESTController):
         """
         
         # build the uniqueNames array from different possilble kwargs
-        uniqueNames = ropy.server.get_array_from_kwargs("uniqueNames", **kwargs)
-        ropy.server.get_array_from_kwargs("u", uniqueNames, **kwargs)
+        uniqueNames = ropy.server.get_array_from_hash("uniqueNames", kwargs)
+        uniqueNames2 = ropy.server.get_array_from_hash("u", kwargs)
+        
+        if len(uniqueNames2) > 0: uniqueNames.extend(uniqueNames2)
         
         # special case of arrays being passed using the us parameter, with the delimiter
         delimiter = kwargs["delimiter"] if "delimiter" in kwargs else ","
@@ -94,7 +96,8 @@ class FeatureController(ropy.server.RESTController):
         
         logger.debug(uniqueNames)
         
-        if len(uniqueNames) == 0: raise ropy.server.ServerException("Please provide at least one uniqueNames / u / us parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+        if len(uniqueNames) == 0: 
+            raise ropy.server.ServerException("Please provide at least one uniqueNames / u / us parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
         
         data = self.api.getFeatureProps(uniqueNames)
         return data
@@ -143,7 +146,9 @@ class SourceFeatureController(ropy.server.RESTController):
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         
-        relationships = ropy.server.get_array_from_kwargs("relationships")
+        relationships = ropy.server.get_array_from_hash("relationships", kwargs)
+        # logger.debug(relationships)
+        
         if len(relationships) == 0: 
             relationships = ["part_of", "derives_from"]
         
@@ -151,6 +156,8 @@ class SourceFeatureController(ropy.server.RESTController):
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
         
         data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
+        
+        relationships = []
         return data
         
     featureloc.arguments = { 

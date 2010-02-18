@@ -46,7 +46,11 @@ def close_connection(thread_index):
         logger.debug ("no connection to close in thread " + str(thread_index))
 
 
-
+class StaticRoot(object):
+    pass
+    # @cherrypy.expose
+    #     def index(self):
+    #         return "hello <a href='testing/index.html'>testing....</a> "
 
 def main():
     
@@ -102,6 +106,9 @@ def main():
     # app specific settings
     cherrypy.config.update(options.serverconf)
     
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    
     # app specific settings
     appconfig = {
         '/' : {
@@ -113,6 +120,12 @@ def main():
         }
     }
     
+    appconfig2 = {
+        '/testing' : {
+            'tools.staticdir.on': True,
+            'tools.staticdir.dir': os.path.join(current_dir, 'html/testing')
+        }
+    }
     
     # assign these listeners to manage connections per thread
     cherrypy.engine.subscribe('start_thread', setup_connection)
@@ -122,10 +135,10 @@ def main():
     # import ropy.alchemy.sqlalchemy_tool
     import ropy.psy.psycopg2_tool
     
-    # cherrypy.log.access_log.setLevel(logging.DEBUG)
     
     # cherrypy.quickstart(root, "/", options.conf)
     app = cherrypy.tree.mount(root, "/", appconfig)
+    app2 = cherrypy.tree.mount(StaticRoot(), "/static", appconfig2)
     
     engine = cherrypy.engine
     

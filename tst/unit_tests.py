@@ -9,7 +9,10 @@ Copyright (c) 2009 Wellcome Trust Sanger Institute. All rights reserved.
 
 import ConfigParser
 import os
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import sys
 import unittest
 import optparse

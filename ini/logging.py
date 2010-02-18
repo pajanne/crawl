@@ -33,7 +33,7 @@ args=(sys.stdout,)
 class=handlers.RotatingFileHandler
 level=DEBUG
 formatter=simpleFormatter
-args=('/home/gv1/tmp/charpy.log', 'a', 5000000, 5)
+args=('/Users/gv1/tmp/charpy.log', 'a', 5000000, 5)
 
 [formatter_simpleFormatter]
 format= [%(levelname)s] - %(thread)d - [%(name)s] %(pathname)s,%(lineno)d %(funcName)s()  - %(message)s

@@ -95,10 +95,13 @@ class Queries(QueryProcessor):
         rows = self.runQueryAndMakeDictionary("source_feature_sequence", (uniqueName, ))
         return rows
     
-    def getCvtermID(self, cvname, cvtermname ):
-        args = {"cvtermname" : cvtermname, "cvname" : cvname }
+    def getCvtermID(self, cvname, cvtermnames ):
+        args = {"cvtermnames" : tuple(cvtermnames), "cvname" : cvname }
         rows = self.runQuery("get_cvterm_id", args)
-        return rows[0][0]
+        results=[]
+        for r in rows:
+            results.append(r[0])
+        return results
     
     def getFeatureLocs(self, source_feature_id, start, end, relationships):
         args = {

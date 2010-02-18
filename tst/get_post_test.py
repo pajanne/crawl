@@ -9,7 +9,11 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 
 import sys
 import os
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 import logging, logging.config
 
 logger = logging.getLogger("charpy")
@@ -18,7 +22,7 @@ logging.config.fileConfig(os.path.dirname(__file__) + "/logging.conf")
 from ropy.client import RopyClient, ServerReportedException
 
 def main():
-    client = RopyClient("http://localhost:6666/")
+    client = RopyClient("http://localhost:7777/")
     
     # a POST request using the u array parameter
     parameters = {

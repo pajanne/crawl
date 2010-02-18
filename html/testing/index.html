@@ -1,0 +1,106 @@
+<html>
+<head>
+    
+    <style>
+        .pass {
+            color:blue;
+        }
+        .fail {
+            color:red;
+        }
+        .expectedfail {
+            color:purple;
+        }
+    </style>
+    
+    <script type="text/javascript" src="jquery.js"></script>
+    
+    <script>
+        
+        var testNumber = 0
+        
+        $(function() {
+            $('#test').click(function(e) {
+                
+                // add tests here, as needed....
+                
+                makeRequest(1, "/genes/featureproperties.json", {
+                        "uniqueNames": ["PFA0290w:exon:2", "PFA0300c:exon:1"]
+                }, false);
+                
+                makeRequest(2, "/sourcefeatures/featureloc.json", {
+                    "uniqueName" : "Pf3D7_01",
+                    "start" : 450001,
+                    "end" : 460001,
+                    "relationships" : ['part_of','derives_from']
+                }, false);
+                
+                
+                makeRequest(3, "/sourcefeatures/featureloc.json", {
+                    "uniqueName" : "Pf3D7_01",
+                    "start" : 450001,
+                    "end" : 46000000,
+                    "relationships" : ['part_of','derives_from']
+                }, false);
+                
+                makeRequest(4, "/sourcefeatures/featureloc.json", {
+                    "uniqueName" : "Pf3D7_01",
+                    "start" : 450001,
+                    "end" : 46000000,
+                    "relationships" : ['y','x']
+                }, true);
+                
+            })
+        });
+        
+        function makeRequest(t, url, data, shouldFail) {
+            
+            $.ajax({
+                url: url,
+                type: 'POST',
+                dataType: 'json',
+                data: data,
+                // contentType: 'application/json; charset=utf-8',
+                success: function(result) {
+                    console.log(result);
+                    if (result["response"]["error"] != null) {
+                        fail(t, url, result["response"]["error"]["message"], shouldFail);
+                    } else {
+                        pass(t, url, shouldFail);
+                    }
+                },
+                beforeSend: function(request) {
+                    console.log(request.data);
+                },
+                error : function (xhr, ajaxOptions, thrownError){
+                     fail(t, url, + xhr.status + "\t" + thrownError, shouldFail);
+                }
+            });
+        }
+        
+        function fail(t, url, error, shouldFail) {
+            if (shouldFail) {
+                reportClass = "expectedfail";
+            } else {
+                reportClass = "fail";
+            }
+            $('#results').append("<tr class="+reportClass+"><td>"+t+"</td><td>" + url + "</td><td>FAIL</td><td>"+shouldFail+"</td><td>" + error + "</td></tr>");
+        }
+        
+        function pass(t, url, shouldFail) {
+            $('#results').append("<tr class=pass><td>"+t+"</td><td>" + url + "</td><td>OK</td><td>"+shouldFail+"</td></tr>");
+        }
+        
+    </script>
+    
+    
+</head>
+<body>
+    <h2>AJAX tests</h2>
+    <u><b><a id="test">click to run test</a></b></u>
+    
+    <table class="results" id="results" border=1 cellpadding=10 cellspacing=10>
+        <tr><td>test number</td><td>url</td><td>pass</td><td>expected to fail</td><td>message</td></tr>
+        
+    </table>
+</body>

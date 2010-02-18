@@ -9,7 +9,10 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 
 import sys
 import os
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import threading
 import random
 
