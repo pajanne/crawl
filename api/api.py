@@ -221,6 +221,41 @@ class FeatureAPI(object):
         }
         return data
     
+    
+    def getCDSs(self, taxonID):
+        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        results = self.queries.getCDSs(organism_id)
+        data = {
+            "response" : {
+                "name" : "genes/cds",
+                "genes" : results
+            }
+        }
+        return data
+    
+    
+    def getMRNAs(self, gene_unique_names):
+        results = self.queries.getMRNAs(gene_unique_names)
+        data = {
+            "response" : {
+                "name" : "genes/mrnas",
+                "mrnas" : results
+            }
+        }
+        return data
+    
+    
+    def getPEPs(self, gene_unique_names):
+        results = self.queries.getPEPs(gene_unique_names)
+        data = {
+            "response" : {
+                "name" : "genes/polypeptides",
+                "polypeptides" : results
+            }
+        }
+        return data
+    
+    
 
 class OrganismAPI(object):
     
@@ -229,7 +264,7 @@ class OrganismAPI(object):
     
     def getAllOrganismsAndTaxonIDs(self):
         organism_list = self.queries.getAllOrganismsAndTaxonIDs()
-        
+        logger.debug(organism_list)
         data = {
             "response" : {
                 "name" : "organisms/list",

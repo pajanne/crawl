@@ -109,6 +109,41 @@ class FeatureController(ropy.server.RESTController):
         "delimiter" : "instructs how to split strings, defaults to a comma(,)"
     }
     
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def genes(self, taxonID):
+        """
+            Returns a list of genes in an organism.
+        """
+        return self.api.getCDSs(taxonID)
+    genes.arguments = {
+        "taxonID" : "the taxonID of the organism you wish to obtain genes from"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def mrnas(self, **kwargs):
+        """
+            Returns a mRNA sequences for a list of genes.
+        """
+        genenames = ropy.server.get_array_from_hash("genenames", kwargs)
+        return self.api.getMRNAs(genenames)
+    mrnas.arguments = {
+        "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def polypeptides(self, **kwargs):
+        """
+            Returns a polypeptide sequences for a list of genes.
+        """
+        genenames = ropy.server.get_array_from_hash("genenames", kwargs)
+        return self.api.getPEPs(genenames)
+    mrnas.arguments = {
+        "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
+    }
+    
 
 class SourceFeatureController(ropy.server.RESTController):
     """
@@ -214,7 +249,9 @@ class OrganismController(ropy.server.RESTController):
         """
             Lists all organisms and their taxonomyIDs. 
         """
+        logger.debug("?")
         data = self.api.getAllOrganismsAndTaxonIDs()
+        logger.debug("?")
         return data
     
     list.arguments = {}

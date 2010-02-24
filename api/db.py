@@ -47,6 +47,9 @@ class Queries(QueryProcessor):
         self.addQueryFromFile("get_top_level_type_id", "get_top_level_type_id.sql")
         self.addQueryFromFile("get_featureprop", "get_featureprop.sql")
         
+        self.addQueryFromFile("get_all_cds_features_for_organism", "get_all_cds_features_for_organism.sql")
+        self.addQueryFromFile("get_cds_mrna_residues", "get_cds_mrna_residues.sql")
+        self.addQueryFromFile("get_cds_pep_residues", "get_cds_pep_residues.sql")
         
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
@@ -144,6 +147,17 @@ class Queries(QueryProcessor):
     def getFeatureProps(self, uniqueNames):
         return self.runQueryAndMakeDictionary("get_featureprop",  {"uniquenames" : tuple(uniqueNames) })
 
+    
+    def getCDSs(self, organism_id):
+        logger.info(organism_id)
+        return self.runQueryAndMakeDictionary("get_all_cds_features_for_organism", (organism_id, ))
+    
+    def getMRNAs(self, gene_unique_names):
+        return self.runQueryAndMakeDictionary("get_cds_mrna_residues", { "genenames": tuple(gene_unique_names) } )
+    
+    def getPEPs(self, gene_unique_names):
+        return self.runQueryAndMakeDictionary("get_cds_pep_residues", { "genenames": tuple(gene_unique_names) } )
+    
     
     def validateDate(self, date):
         try:
