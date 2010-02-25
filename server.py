@@ -99,6 +99,7 @@ def main():
     cherrypy.config.update({
         'request.error_response' : handle_error,
         'error_page.default' : error_page_default,
+        'tools.proxy.on': True
     })
     
     

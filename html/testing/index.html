@@ -56,6 +56,17 @@
                     "relationships" : ['y','x']
                 }, true);
                 
+                makeRequest(5, "/genes/residues.json", {
+                    "sourcefeature" : "Pf3D7_01",
+                    "features" : "RNAzID:13:ncRNA"
+                }, false)
+                
+                makeRequest(6, "/genes/residues.json", {
+                    "sourcefeature" : "Pf3D7_01",
+                    "features" : ["RNAzID:13:ncRNA"]
+                }, false)
+                
+                
             })
         });
         

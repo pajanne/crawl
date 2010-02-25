@@ -111,36 +111,50 @@ class FeatureController(ropy.server.RESTController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def genes(self, taxonID):
+    def list(self, taxonID):
         """
             Returns a list of genes in an organism.
         """
         return self.api.getCDSs(taxonID)
-    genes.arguments = {
+    list.arguments = {
         "taxonID" : "the taxonID of the organism you wish to obtain genes from"
     }
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def mrnas(self, **kwargs):
+    def residues(self, sourcefeature, **kwargs):
+        """
+            Returns the sequences of features mapped onto a source feature.
+        """
+        features = ropy.server.get_array_from_hash("features", kwargs, True)
+        logger.debug(features)
+        return self.api.getFeatureResiduesFromSourceFeature(sourcefeature, features)
+    residues.arguments = {
+        "sourcefeature" : "the uniquename of a sourcefeature, i.e. one of the entries returned by /top.",
+        "features" : "a list of features located on the source features, whose sequences you wish to retrieve"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def mrnaresidues(self, **kwargs):
         """
             Returns a mRNA sequences for a list of genes.
         """
         genenames = ropy.server.get_array_from_hash("genenames", kwargs)
         return self.api.getMRNAs(genenames)
-    mrnas.arguments = {
+    mrnaresidues.arguments = {
         "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
     }
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def polypeptides(self, **kwargs):
+    def polypeptideresidues(self, **kwargs):
         """
             Returns a polypeptide sequences for a list of genes.
         """
         genenames = ropy.server.get_array_from_hash("genenames", kwargs)
         return self.api.getPEPs(genenames)
-    mrnas.arguments = {
+    polypeptideresidues.arguments = {
         "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
     }
     

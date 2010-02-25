@@ -50,6 +50,7 @@ class Queries(QueryProcessor):
         self.addQueryFromFile("get_all_cds_features_for_organism", "get_all_cds_features_for_organism.sql")
         self.addQueryFromFile("get_cds_mrna_residues", "get_cds_mrna_residues.sql")
         self.addQueryFromFile("get_cds_pep_residues", "get_cds_pep_residues.sql")
+        self.addQueryFromFile("get_feature_sequence", "get_feature_sequence.sql")
         
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
@@ -113,11 +114,13 @@ class Queries(QueryProcessor):
             "end":end,
             "relationships":tuple(relationships), # must convert arrays to tuples
         }
+        
         rows = self.runQueryAndMakeDictionary("feature_locs", args)
         
+        # import json
+        # logger.debug(json.dumps(rows, indent=4, sort_keys=True))
         # for r in rows:
-        #             import json
-        #             logger.debug(json.dumps(r, indent=4))
+        #     logger.debug(json.dumps(r, indent=4))
         
         return rows
     
@@ -158,6 +161,8 @@ class Queries(QueryProcessor):
     def getPEPs(self, gene_unique_names):
         return self.runQueryAndMakeDictionary("get_cds_pep_residues", { "genenames": tuple(gene_unique_names) } )
     
+    def getFeatureResiduesFromSourceFeature(self, sourcefeature, features):
+        return self.runQueryAndMakeDictionary("get_feature_sequence", { 'sourcefeature': sourcefeature, 'features' : tuple(features)})
     
     def validateDate(self, date):
         try:

@@ -16,6 +16,8 @@ import os
 import logging
 from db import Queries
 
+import ropy.server
+
 logger = logging.getLogger("charpy")
 
 class FeatureAPI(object):
@@ -84,11 +86,34 @@ class FeatureAPI(object):
     def getFeatureLoc(self, sourceFeatureUniqueName, start, end, relationships):
         sourceFeatureID = self.queries.getFeatureID(sourceFeatureUniqueName)
         
-        relationship_ids = self.queries.getCvtermID("relationship", relationships)
+        relationship_ids = []
+        
+        """
+            part_of is currently stored in a different CV term to the rest :
+            select count(type_id), cvterm.name, cv.name from feature_relationship join cvterm on feature_relationship.type_id = cvterm.cvterm_id join cv on cvterm.cv_id = cv.cv_id group by cvterm.name, cv.name;
+              count  |      name      |     name     
+            ---------+----------------+--------------
+              510619 | derives_from   | sequence
+              406534 | orthologous_to | sequence
+                 341 | paralogous_to  | sequence
+             1929818 | part_of        | relationship
+            
+            so we need to make sure that its cvterm_id is fetched from the right cv!
+        """
+        if "part_of" in relationships:
+            relationships.remove("part_of")
+            relationship_ids = self.queries.getCvtermID("sequence", relationships)
+            part_of_id = self.queries.getCvtermID("relationship", ["part_of"])[0]
+            relationship_ids.append(part_of_id)
+        else:
+            relationship_ids = self.queries.getCvtermID("sequence", relationships)
+        
+        
         if len(relationship_ids) == 0:
-            raise Exception("Could not find cvterms " + str(relationships) + " in the relationship cv.")
-        logger.debug(relationships)
-        logger.debug(relationship_ids)
+            raise ropy.server.ServerException("Could not find any cvterms " + str(relationships) + " in the relationship cv.", ropy.server.ERROR_CODES["DATA_NOT_FOUND"])
+        
+        # logger.debug(relationships)
+        # logger.debug(relationship_ids)
         
         rows = self.queries.getFeatureLocs(sourceFeatureID, start, end, relationship_ids)
         
@@ -227,7 +252,7 @@ class FeatureAPI(object):
         results = self.queries.getCDSs(organism_id)
         data = {
             "response" : {
-                "name" : "genes/cds",
+                "name" : "genes/list",
                 "genes" : results
             }
         }
@@ -238,7 +263,7 @@ class FeatureAPI(object):
         results = self.queries.getMRNAs(gene_unique_names)
         data = {
             "response" : {
-                "name" : "genes/mrnas",
+                "name" : "genes/mrnaresidues",
                 "mrnas" : results
             }
         }
@@ -249,12 +274,21 @@ class FeatureAPI(object):
         results = self.queries.getPEPs(gene_unique_names)
         data = {
             "response" : {
-                "name" : "genes/polypeptides",
+                "name" : "genes/polypeptideresidues",
                 "polypeptides" : results
             }
         }
         return data
     
+    def getFeatureResiduesFromSourceFeature(self, sourcefeature, features):
+        results = self.queries.getFeatureResiduesFromSourceFeature(sourcefeature, features)
+        data = {
+            "response" : {
+                "name" : "genes/residues",
+                "residues" : results
+            }
+        }
+        return data
     
 
 class OrganismAPI(object):
