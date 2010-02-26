@@ -3,6 +3,9 @@
 """
 controllers.py
 
+Classes in this module are for exposure as webservices. They inherit from ropy.server.RESTController, and methods are 
+decorated to expose them. 
+
 Created by Giles Velarde on 2010-02-04.
 Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 """
