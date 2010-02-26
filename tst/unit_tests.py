@@ -42,16 +42,27 @@ password=eval(config.get('Connection', 'password'))
 
 connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
 
-
-class GeneTests(unittest.TestCase):
+class FeatureLengthTest(unittest.TestCase):
     
     def setUp(self):
         self.queries = Queries(connectionFactory)
     
     def test1(self):
+        result = self.queries.getFeatureLength("Pf3D7_01")
+        print Formatter(result).formatJSON()
+
+
+
+class GeneTests(unittest.TestCase):
+     
+    def setUp(self):
+        self.queries = Queries(connectionFactory)
+     
+    def test1(self):
+        print dir(self.queries)
         gene_results = self.queries.getCDSs(22)
         print Formatter(gene_results).formatJSON()[1:10000]
-        
+         
         genes = []
         for gene_result in gene_results:
             genes.append(gene_result["gene"])

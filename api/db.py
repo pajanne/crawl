@@ -16,7 +16,7 @@ import os
 import time
 import logging
 
-from ropy.query import QueryProcessor
+from ropy.query import QueryProcessor, QueryProcessorException
 from ropy.server import ServerException, ERROR_CODES
 
 logger = logging.getLogger("charpy")
@@ -120,12 +120,9 @@ class Queries(QueryProcessor):
 
     def getFeatureID(self, uniqueName):
         try:
-            rows = self.runQuery("get_feature_id_from_uniquename", (uniqueName, ))
-            return rows[0][0]
-        except Exception, e:
-            logger.error(e)
-            se = ServerException("Could not find a feature with uniqueName of " + uniqueName + ".", ERROR_CODES["DATA_NOT_FOUND"])
-            raise ServerException, se
+            return self.runQueryExpectingSingleRow("get_feature_id_from_uniquename", (uniqueName, ))[0][0]
+        except QueryProcessorException, qpe:
+            raise ServerException(qpe.value, ERROR_CODES["DATA_NOT_FOUND"])
     
     def getFeatureProps(self, uniqueNames):
         return self.runQueryAndMakeDictionary("get_featureprop",  {"uniquenames" : tuple(uniqueNames) })
@@ -144,9 +141,15 @@ class Queries(QueryProcessor):
     def getFeatureResiduesFromSourceFeature(self, sourcefeature, features):
         return self.runQueryAndMakeDictionary("get_feature_sequence", { 'sourcefeature': sourcefeature, 'features' : tuple(features)})
     
+    def getFeatureLength(self, uniquename):
+        try:
+            return self.runQueryExpectingSingleRow("feature_length", (uniquename, ))[0][0]
+        except QueryProcessorException, qpe:
+            raise ServerException(qpe.value, ERROR_CODES["DATA_NOT_FOUND"])
+    
     def validateDate(self, date):
         try:
-            c = time.strptime(date,"%Y-%m-%d")
+            time.strptime(date,"%Y-%m-%d")
         except Exception, e:
             # print "date " + date
             logger.error(e)

@@ -290,6 +290,16 @@ class FeatureAPI(object):
         }
         return data
     
+    def getFeatureLength(self, uniquename):
+        results = self.queries.getFeatureLength(uniquename)
+        data = {
+            "response" : {
+                          "name" :"genes/length",
+                          "length" : results
+            }
+        }
+        return data
+    
 
 class OrganismAPI(object):
     

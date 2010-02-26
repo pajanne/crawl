@@ -149,6 +149,7 @@ class FeatureController(ropy.server.RESTController):
         "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
     }
     
+    
     @cherrypy.expose
     @ropy.server.service_format()
     def polypeptideresidues(self, **kwargs):
@@ -160,6 +161,16 @@ class FeatureController(ropy.server.RESTController):
     polypeptideresidues.arguments = {
         "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
     }
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def length(self, uniquename):
+        """
+            Returns the length of a feature.
+        """
+        return self.api.getFeatureLength(uniquename)
+    length.arguments = { "uniquename" : "the uniquename of the feature" }
     
 
 class SourceFeatureController(ropy.server.RESTController):
