@@ -13,7 +13,6 @@ or dictionaries.
 
 
 import os
-import sys
 import time
 import logging
 
@@ -27,39 +26,20 @@ class Queries(QueryProcessor):
     def __init__(self, connectionFactory):
         super(Queries, self).__init__(connection=connectionFactory, single=True)
         
-        
         # reset the path to this the sql subfolder at the location class
         self.setSQLFilePath(os.path.dirname(__file__) + "/../sql/")
         
-        self.addQueryFromFile("all_changed", "all_changed_features_for_organism.sql")
-        self.addQueryFromFile("get_organism_from_taxon", "get_organism_id_from_taxon_id.sql")
-        self.addQueryFromFile("get_all_privates_with_dates", "get_all_privates_with_dates.sql")
-        self.addQueryFromFile("count_changed_features_organism", "count_changed_features_organism.sql")
-        self.addQueryFromFile("get_all_organisms_and_taxon_ids", "get_all_organisms_and_taxon_ids.sql")
-        
-        self.addQueryFromFile("count_all_changed_features", "count_all_changed_features.sql")
-        self.addQueryFromFile("source_feature_sequence", "source_feature_sequence.sql")
-        self.addQueryFromFile("feature_locs", "feature_locs.sql")
-        self.addQueryFromFile("get_feature_id_from_uniquename", "get_feature_id_from_uniquename.sql")
-        self.addQueryFromFile("get_cvterm_id", "get_cvterm_id.sql")
-        
-        self.addQueryFromFile("get_top_level", "get_top_level.sql")
-        self.addQueryFromFile("get_top_level_type_id", "get_top_level_type_id.sql")
-        self.addQueryFromFile("get_featureprop", "get_featureprop.sql")
-        
-        self.addQueryFromFile("get_all_cds_features_for_organism", "get_all_cds_features_for_organism.sql")
-        self.addQueryFromFile("get_cds_mrna_residues", "get_cds_mrna_residues.sql")
-        self.addQueryFromFile("get_cds_pep_residues", "get_cds_pep_residues.sql")
-        self.addQueryFromFile("get_feature_sequence", "get_feature_sequence.sql")
-        
+        # load the SQL files fom the sql folder
+        for file in os.listdir(self.sqlPath):
+            if file.endswith(".sql"): self.addQueryFromFile(file.replace(".sql", ""), file )
     
     def getAllChangedFeaturesForOrganism(self, date, organism_id):
         self.validateDate(date)
-        rows = self.runQueryAndMakeDictionary("all_changed", (date, organism_id, date, organism_id, date, organism_id))
+        rows = self.runQueryAndMakeDictionary("all_changed_features_for_organism", (date, organism_id, date, organism_id, date, organism_id))
         return rows
     
     def getOrganismFromTaxon(self, taxonID):
-        rows = self.runQuery("get_organism_from_taxon", (taxonID, ))
+        rows = self.runQuery("get_organism_id_from_taxon_id", (taxonID, ))
         try:
             # return the first value of the first row... 
             return rows[0][0]
