@@ -18,7 +18,7 @@ import unittest
 import optparse
 
 
-from charpy.api.db import Queries
+from crawl.api.db import Queries
 
 import ropy.query
 from ropy.client import RopyClient, ServerReportedException
@@ -258,5 +258,5 @@ class ClientServerTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main(argv=['charpy'])
+    unittest.main(argv=['crawl'])
 

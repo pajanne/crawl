@@ -16,7 +16,7 @@ except ImportError:
 
 import logging, logging.config
 
-logger = logging.getLogger("charpy")
+logger = logging.getLogger("crawl")
 logging.config.fileConfig(os.path.dirname(__file__) + "/logging.conf")
 
 from ropy.client import RopyClient, ServerReportedException

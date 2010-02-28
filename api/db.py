@@ -19,7 +19,7 @@ import logging
 from ropy.query import QueryProcessor, QueryProcessorException
 from ropy.server import ServerException, ERROR_CODES
 
-logger = logging.getLogger("charpy")
+logger = logging.getLogger("crawl")
 
 class Queries(QueryProcessor):
     

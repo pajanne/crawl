@@ -16,7 +16,7 @@ import cherrypy
 
 import logging
 
-logger = logging.getLogger("charpy")
+logger = logging.getLogger("crawl")
 
 import ropy.server
 import api

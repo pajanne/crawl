@@ -18,7 +18,7 @@ from db import Queries
 
 import ropy.server
 
-logger = logging.getLogger("charpy")
+logger = logging.getLogger("crawl")
 
 class FeatureAPI(object):
     

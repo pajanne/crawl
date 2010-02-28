@@ -16,7 +16,7 @@ from ropy.query import ConnectionFactory
 
 import api.controllers
 
-logger = logging.getLogger("charpy")
+logger = logging.getLogger("crawl")
 
 # note, should these two listeners might be moved into the ropy.server module? the setup depends on cherrypy.config['Connection'], which may be considered to be an app specific setting.
 def setup_connection(thread_index):
