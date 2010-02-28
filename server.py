@@ -129,6 +129,8 @@ def main():
         }
     }
     
+    logger.debug(os.path.join(current_dir, 'htm/'))
+    
     # assign these listeners to manage connections per thread
     cherrypy.engine.subscribe('start_thread', setup_connection)
     cherrypy.engine.subscribe('stop_thread', close_connection)
@@ -140,7 +142,7 @@ def main():
     
     # cherrypy.quickstart(root, "/", options.conf)
     app = cherrypy.tree.mount(root, "/", appconfig)
-    app2 = cherrypy.tree.mount(StaticRoot(), "/static", appconfig2)
+    app2 = cherrypy.tree.mount(StaticRoot(), "/htm", appconfig2)
     
     engine = cherrypy.engine
     
