@@ -125,7 +125,7 @@ def main():
         '/' : {
             'tools.staticdir.on': True,
             'tools.staticdir.index' : 'index.html',
-            'tools.staticdir.dir': os.path.join(current_dir, 'html/')
+            'tools.staticdir.dir': os.path.join(current_dir, 'htm/')
         }
     }
     
