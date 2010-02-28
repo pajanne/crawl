@@ -81,15 +81,13 @@ class BusinessTests(unittest.TestCase):
     
     def testGetSourceFeatureSequence(self):
         data = self.queries.getFeatureLocs(1, 1, 100000, [42, 69])
-        formatter = Formatter(data)
-        # print formatter.formatJSON()
+        print Formatter(data).formatJSON()
+        
     
     def testGetTopLevel(self):
-        taxonomy_id = 420245
-        
         data = self.queries.getTopLevel(14)
-        formatter = Formatter(data)
-        print formatter.formatJSON()
+        print Formatter(data).formatJSON()
+        
     
 
 class BusinessTests2(unittest.TestCase):
@@ -100,7 +98,6 @@ class BusinessTests2(unittest.TestCase):
     def testAllChanged(self):
             since = "2009-06-01"
             organism_id = 14
-            taxonomy_id = 420245
             changed_features = self.queries.getAllChangedFeaturesForOrganism(since, organism_id)
         
             data = {

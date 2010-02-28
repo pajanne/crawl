@@ -7,7 +7,6 @@ Created by Giles Velarde on 2010-02-17.
 Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 """
 
-import sys
 import os
 try:
     import simplejson as json
@@ -19,7 +18,7 @@ import logging, logging.config
 logger = logging.getLogger("crawl")
 logging.config.fileConfig(os.path.dirname(__file__) + "/logging.conf")
 
-from ropy.client import RopyClient, ServerReportedException
+from ropy.client import RopyClient
 
 def main():
     client = RopyClient("http://localhost:6666/")
@@ -44,7 +43,7 @@ def main():
     parameters3 = {
         "u": ["PFA0290w:exon:2", "PFA0300c:exon:1"]
     }
-    response3 = json.dumps(client.request("genes/featureproperties.json", parameters, False), indent=1)
+    response3 = json.dumps(client.request("genes/featureproperties.json", parameters3, False), indent=1)
     logger.info(response3)
     
     
@@ -55,7 +54,7 @@ def main():
     parameters4 = {
         "uniqueNames": ["PFA0290w:exon:2", "PFA0300c:exon:1"]
     }
-    response4 = client.request("genes/featureproperties.json", parameters, False, False)
+    response4 = client.request("genes/featureproperties.json", parameters4, False, False)
     logger.info(response4)
     
     assert isinstance(response4, str)

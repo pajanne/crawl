@@ -10,7 +10,6 @@ Created by Giles Velarde on 2010-02-04.
 Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 """
 
-import sys
 import os
 import cherrypy
 
@@ -179,7 +178,7 @@ class SourceFeatureController(ropy.server.RESTController):
     """
     
     def __init__(self):
-       self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
+        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
         self.api = api.FeatureAPI(cherrypy.thread_data.connectionFactory)

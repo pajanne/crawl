@@ -7,20 +7,18 @@ Created by Giles Velarde on 2010-01-15.
 Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 """
 
-import sys
 import os
 try:
     import simplejson as json
 except ImportError:
     import json
 import threading
-import random
 
-from ropy.client import RopyClient, ServerReportedException
+from ropy.client import RopyClient
 
 class BatchTest ( threading.Thread ):
 
-   def run ( self ):
+    def run ( self ):
         client = RopyClient("http://localhost:6666/", os.path.dirname(__file__) + "/../tpl/")
         
         parameters = {
@@ -38,6 +36,7 @@ class BatchTest ( threading.Thread ):
         try:
             assert "error" not in response
         except AssertionError, e:
+            print e
             print json.dumps(data, indent=4)
         
 

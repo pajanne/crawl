@@ -9,7 +9,6 @@ import logging.config
 import cherrypy
 from cherrypy.process import plugins
 
-import ropy
 from ropy.server import Root, handle_error, error_page_default, generate_mappings
 from ropy.query import ConnectionFactory
 
@@ -66,6 +65,9 @@ def main():
     
     (options, args) = parser.parse_args()
     
+    logger.debug(options)
+    logger.debug(args)
+    
     for option in ['appconf', 'serverconf', 'logconf']:
         if getattr(options, option) == None:
             print "Please supply a --%s parameter.\n" % (option)
@@ -75,6 +77,7 @@ def main():
     try:
         logging.config.fileConfig(options.logconf, disable_existing_loggers=False)
     except Exception, e:
+        print e
         print "Warning: could not setup logging with disable_existing_loggers=False flag."
         logging.config.fileConfig(options.logconf)
     
@@ -143,6 +146,9 @@ def main():
     # cherrypy.quickstart(root, "/", options.conf)
     app = cherrypy.tree.mount(root, "/", appconfig)
     app2 = cherrypy.tree.mount(StaticRoot(), "/htm", appconfig2)
+    
+    logger.debug(app)
+    logger.debug(app2)
     
     engine = cherrypy.engine
     

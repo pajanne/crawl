@@ -11,8 +11,6 @@ the results back in a complex json-like structure.
 
 """
 
-import sys
-import os
 import logging
 from db import Queries
 
@@ -190,7 +188,7 @@ class FeatureAPI(object):
                     l2["features"].append(l3)
                     result_map[r['l3_uniquename']] = l3
         
-        results_map = None
+        result_map = None
         
         data = {
             "response" : {
@@ -202,18 +200,18 @@ class FeatureAPI(object):
         return data
 
     def getTopLevel(self, taxonID):
-       organism_id = self.queries.getOrganismFromTaxon(taxonID)
-       results = self.queries.getTopLevel(organism_id)
-       
-       data = {
+        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        results = self.queries.getTopLevel(organism_id)
+        
+        data = {
            "response" : {
                "name" : "genes/top",
                "taxonId" : taxonID,
                "features" : results
            }
-       }
-       
-       return data
+        }
+        
+        return data
     
     def getFeatureProps(self, uniquenames):
         
