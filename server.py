@@ -3,7 +3,8 @@ import optparse
 import os
 import sys
 
-import logging
+
+import logging #@UnusedImport
 import logging.config
 
 import cherrypy
@@ -140,7 +141,7 @@ def main():
     
     # import the tools before starting the server
     # import ropy.alchemy.sqlalchemy_tool
-    import ropy.psy.psycopg2_tool
+    import ropy.psy.psycopg2_tool #@UnusedImport
     
     
     # cherrypy.quickstart(root, "/", options.conf)

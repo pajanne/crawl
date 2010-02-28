@@ -13,7 +13,8 @@ try:
 except ImportError:
     import json
 
-import logging, logging.config
+
+import logging, logging.config #@UnusedImport
 
 logger = logging.getLogger("crawl")
 logging.config.fileConfig(os.path.dirname(__file__) + "/logging.conf")
