@@ -292,8 +292,53 @@ class FeatureAPI(object):
         results = self.queries.getFeatureLength(uniquename)
         data = {
             "response" : {
-                          "name" :"genes/length",
-                          "length" : results
+                "name" :"genes/length",
+                "length" : results
+            }
+        }
+        return data
+    
+    
+    def getFeatureCVTerm(self, features, cv_names):
+        results = self.queries.getFeatureCVTerm(features, cv_names)
+        
+        to_return = []
+        feature_store = {}
+        cvterm_store = {}
+        
+        for result in results:
+            if result["feature"] not in feature_store:
+                feature_store[result["feature"]] =  {
+                    "feature" : result["feature"],
+                    "terms" : []
+                }
+                to_return.append (feature_store[result["feature"]])
+                
+            if result["cv"] != None:
+                cvterm_store_key = result["feature"] + result["cvterm"]
+                
+                if cvterm_store_key not in cvterm_store:
+                    cvterm_store[cvterm_store_key] = {
+                        "cvterm" : result["cvterm"],
+                        "cv" : result["cv"],
+                        "props" : []
+                    }
+                    feature_store[result["feature"]]["terms"].append(cvterm_store[cvterm_store_key])
+        
+                if "prop" in result:
+                    cvterm_store[cvterm_store_key]["props"].append ({
+                        "prop" : result["prop"],
+                        "proptype" : result["proptype"],
+                        "proptypecv" : result["proptypecv"]
+                    })
+            
+        feature_store = None
+        cvterm_store = None
+        
+        data = {
+            "response" : {
+                "name" :"genes/cv",
+                "features" : to_return
             }
         }
         return data

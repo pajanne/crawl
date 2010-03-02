@@ -147,6 +147,18 @@ class Queries(QueryProcessor):
         except QueryProcessorException, qpe:
             raise ServerException(qpe.value, ERROR_CODES["DATA_NOT_FOUND"])
     
+    def getOrganismProp(self, organism_ids, cvterm_name, cv_name):
+        return self.runQueryAndMakeDictionary("get_organism_prop", { "organism_ids" : tuple(organism_ids), "cvterm_name" : cvterm_name, "cv_name" : cv_name  } )
+        
+    def getFeatureCoordinates(self, sourcefeature, features):
+        return self.runQueryAndMakeDictionary("get_feature_coordinates", {"sourcefeature" : sourcefeature, "features" : tuple(features) } )
+    
+    def getExonCoordinates(self, sourcefeature, genes):
+        return self.runQueryAndMakeDictionary("get_exon_coordinates", {"sourcefeature":sourcefeature, "genenames":tuple(genes)} )
+    
+    def getFeatureCVTerm(self, features, cv_names):
+        return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cv" : tuple(cv_names) })
+    
     def validateDate(self, date):
         try:
             time.strptime(date,"%Y-%m-%d")

@@ -8,17 +8,17 @@ Copyright (c) 2009 Wellcome Trust Sanger Institute. All rights reserved.
 """
 
 import ConfigParser
-import os
 try:
     import simplejson as json
 except ImportError:
-    import json
-import sys
+    import json #@UnusedImport
+import os, sys
 import unittest
 import optparse
 
 
 from crawl.api.db import Queries
+from crawl.api.api import FeatureAPI
 
 import ropy.query
 from ropy.client import RopyClient, ServerReportedException
@@ -42,6 +42,30 @@ password=eval(config.get('Connection', 'password'))
 
 connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
 
+class BoundaryTest(unittest.TestCase):
+    def setUp(self):
+        self.queries = Queries(connectionFactory)
+    
+    def testGetOrganismProp(self):
+        
+        # eurkaryotes and prokaryotes have different translation tables, so choose both a eukaryote and a prokaryote for this test
+        organism_ids = [22, 71]
+        cvterm_name = 'translationTable'
+        cv_name = 'genedb_misc'
+        
+        translation_tables = self.queries.getOrganismProp(organism_ids, cvterm_name, cv_name)
+        print Formatter(translation_tables).formatJSON()
+        self.assertNotEqual(translation_tables[0]["value"], translation_tables[1]["value"])
+    
+    def testGetFeatureCoordinates(self):
+        coords = self.queries.getFeatureCoordinates("Pf3D7_01", ["PFA0170c", "PFA0170c:mRNA", "PFA0170c:exon:1", "PFA0170c:pep", "PFA0315w", "PFA0315w:mRNA", "PFA0315w:exon:1", "PFA0315w:exon:2", "PFA0315w:exon:3", "PFA0315w:exon:4"])
+        print Formatter(coords).formatJSON()
+        
+    
+    def testGetExonCoordinates(self):
+        coords = self.queries.getExonCoordinates("Pf3D7_01", ["PFA0170c", "PFA0315w"])
+        print Formatter(coords).formatJSON()
+
 class FeatureLengthTest(unittest.TestCase):
     
     def setUp(self):
@@ -59,7 +83,7 @@ class GeneTests(unittest.TestCase):
         self.queries = Queries(connectionFactory)
      
     def test1(self):
-        print dir(self.queries)
+        # print dir(self.queries)
         gene_results = self.queries.getCDSs(22)
         print Formatter(gene_results).formatJSON()[1:10000]
          
@@ -73,6 +97,14 @@ class GeneTests(unittest.TestCase):
         peps = self.queries.getPEPs(genes)
         print Formatter(peps).formatJSON()[1:10000]
 
+class APITests(unittest.TestCase):
+    
+    def setUp(self):
+        self.api = FeatureAPI(connectionFactory)
+    
+    def test1(self):
+        cvterms = self.api.getFeatureCVTerm(["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep"], ["biological_process", "molecular_function"])
+        print Formatter(cvterms).formatJSON()
 
 class BusinessTests(unittest.TestCase):
     
@@ -252,8 +284,45 @@ class ClientServerTests(unittest.TestCase):
             self.fail("should throw a server reported exception")
     
     
+def suite():
+    loader = unittest.TestLoader()
+    
+    return unittest.TestSuite([
+        loader.loadTestsFromTestCase(BoundaryTest), 
+        loader.loadTestsFromTestCase(FeatureLengthTest), 
+        loader.loadTestsFromTestCase(APITests),
+        loader.loadTestsFromTestCase(GeneTests), 
+        loader.loadTestsFromTestCase(BusinessTests), 
+        loader.loadTestsFromTestCase(BusinessTests2), 
+        loader.loadTestsFromTestCase(ClientServerTests)
+    ])
+    
 
+def report(title, errs):
+    print "\n:: %s :: \n" % title
+    for test_case, stack in errs:
+        print "##############################################################################"
+        print "Test case: %s" % test_case
+        print "##############################################################################"
+        print stack
+
+def generate_report(result):
+    print "##############################################################################"
+    print "##############################################################################"
+    print "Test Results"
+    print "##############################################################################"
+    print "##############################################################################"
+    print "Success: %s" % result.wasSuccessful()
+    print "Failures: %s" % len(result.failures)
+    print "Errors: %s" % len(result.errors)
+    print "Tests run: %s" % result.testsRun
+    
+    if not result.wasSuccessful():
+        if len(result.failures) > 0: report ("Failures", result.failures)
+        if len(result.errors) > 0: report ("Errors", result.errors)
 
 if __name__ == '__main__':
-    unittest.main(argv=['crawl'])
+    result = unittest.TestResult()
+    suite().run(result)
+    generate_report(result)
 
