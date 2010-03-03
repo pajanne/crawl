@@ -42,10 +42,14 @@ class FeatureAPI(object):
     
     def annotation_changes(self, taxonID, since):
         organism_id = self.queries.getOrganismFromTaxon(taxonID)
-        print organism_id
+        # print organism_id
         rows = self.queries.getGenesWithPrivateAnnotationChanges(organism_id, since)
         
-        print rows
+        # bring in the new style changes
+        # eventually, once all the privates have been migrated, we can remove the query above
+        rows_history = self.getGenesWithHistoryChanges(organism_id, since)
+        for row_history in rows_history:
+            rows.append(row_history)
         
         data = {
             "response" : {
@@ -342,6 +346,33 @@ class FeatureAPI(object):
             }
         }
         return data
+    
+    def _getGenesWithHistoryChanges(self, organism_id, since):
+
+        cvterm_infos = self._getHistoryCvtermPropTypeIDs()
+
+        qualifier_type_id = cvterm_infos[0]["id"]
+        curatorName_type_id = cvterm_infos[1]["id"]
+        date_type_id = cvterm_infos[2]["id"]
+
+        results = self.queries.getGenesWithHistoryChanges(organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id)
+
+        return results
+    
+    def _getHistoryCvtermPropTypeIDs(self):
+        cvterm_infos = (
+            { "cv" : "genedb_misc",         "cvterm" : "qualifier" }, 
+            { "cv" : "genedb_misc",         "cvterm" : "curatorName" }, 
+            { "cv" : "feature_property",    "cvterm" : "date" }
+        )
+        
+        for cvterm_info in cvterm_infos:
+            cvterm_info["id"] = self.queries.getCvtermID( cvterm_info["cv"], [cvterm_info["cvterm"]] )[0]
+        
+        return cvterm_infos
+    
+    def getAnnotationChangeCvterms(self):
+        return self.queries.getAnnotationChangeCvterms()
     
 
 class OrganismAPI(object):

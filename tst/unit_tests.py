@@ -42,6 +42,23 @@ password=eval(config.get('Connection', 'password'))
 
 connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
 
+class HistoryTests(unittest.TestCase):
+    def setUp(self):
+        self.api = FeatureAPI(connectionFactory)
+    
+    def testGetCVTermHash(self):
+        result = self.api._getHistoryCvtermPropTypeIDs()
+        print Formatter(result).formatJSON()
+    
+    def testGetGenesWithHistoryChanges(self):
+        result = self.api._getGenesWithHistoryChanges(16, '2010-03-03')
+        print Formatter(result).formatJSON()
+        
+    def testCombinedHistory(self):
+        result = self.api.annotation_changes('5671', '2009-10-03')
+        print Formatter(result).formatJSON()
+    
+
 class BoundaryTest(unittest.TestCase):
     def setUp(self):
         self.queries = Queries(connectionFactory)
@@ -288,13 +305,14 @@ def suite():
     loader = unittest.TestLoader()
     
     return unittest.TestSuite([
-        loader.loadTestsFromTestCase(BoundaryTest), 
-        loader.loadTestsFromTestCase(FeatureLengthTest), 
-        loader.loadTestsFromTestCase(APITests),
-        loader.loadTestsFromTestCase(GeneTests), 
-        loader.loadTestsFromTestCase(BusinessTests), 
-        loader.loadTestsFromTestCase(BusinessTests2), 
-        loader.loadTestsFromTestCase(ClientServerTests)
+        loader.loadTestsFromTestCase(HistoryTests), 
+        # loader.loadTestsFromTestCase(BoundaryTest), 
+        #         loader.loadTestsFromTestCase(FeatureLengthTest), 
+        #         loader.loadTestsFromTestCase(APITests),
+        #         loader.loadTestsFromTestCase(GeneTests), 
+        #         loader.loadTestsFromTestCase(BusinessTests), 
+        #         loader.loadTestsFromTestCase(BusinessTests2), 
+        #         loader.loadTestsFromTestCase(ClientServerTests)
     ])
     
 

@@ -47,9 +47,9 @@ class Queries(QueryProcessor):
             raise ServerException("Could not find organism for taxonID " + taxonID, ERROR_CODES["DATA_NOT_FOUND"])
     
     def getGenesWithPrivateAnnotationChanges(self, organism_id, since):
-        print organism_id
+        # print organism_id
         returned = self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
-        print returned
+        # print returned
         sinceDate = time.strptime(since,"%Y-%m-%d")
         results = []
         for result in returned:
@@ -58,6 +58,16 @@ class Queries(QueryProcessor):
             if (resultDate >= sinceDate):
                 results.append(result)
         return results
+    
+    def getGenesWithHistoryChanges(self, organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id):
+        returned = self.runQueryAndMakeDictionary("get_history_changes", {
+            "organism_id" : organism_id,
+            "since" : since,
+            "date_type_id" : date_type_id,
+            "curatorName_type_id" : curatorName_type_id,
+            "qualifier_type_id" : qualifier_type_id
+        })
+        return returned
     
     def countAllChangedFeaturesForOrganism(self, organism_id, since):
         self.validateDate(since)        
@@ -158,6 +168,9 @@ class Queries(QueryProcessor):
     
     def getFeatureCVTerm(self, features, cv_names):
         return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cv" : tuple(cv_names) })
+    
+    def getAnnotationChangeCvterms(self):
+        return self.runQueryAndMakeDictionary("get_annotation_change_cvterms")
     
     def validateDate(self, date):
         try:

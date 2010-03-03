@@ -171,6 +171,13 @@ class FeatureController(ropy.server.RESTController):
         return self.api.getFeatureLength(uniquename)
     length.arguments = { "uniquename" : "the uniquename of the feature" }
     
+    def historyeventtypes(self):
+        """
+            Returns the types of history events.
+        """
+        return self.api.getAnnotationChangeCvterms()
+    historyeventtypes.arguments = { }
+    
 
 class SourceFeatureController(ropy.server.RESTController):
     """
