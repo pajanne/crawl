@@ -31,7 +31,7 @@ class FeatureController(ropy.server.RESTController):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
-        self.api = api.FeatureAPI(cherrypy.thread_data.connectionFactory)
+        self.api = api.API(cherrypy.thread_data.connectionFactory)
         super(FeatureController, self).init_handler()
     
     
@@ -188,7 +188,7 @@ class SourceFeatureController(ropy.server.RESTController):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
-        self.api = api.FeatureAPI(cherrypy.thread_data.connectionFactory)
+        self.api = api.API(cherrypy.thread_data.connectionFactory)
         super(SourceFeatureController, self).init_handler()
     
     
@@ -261,7 +261,7 @@ class OrganismController(ropy.server.RESTController):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
-        self.api = api.OrganismAPI(cherrypy.thread_data.connectionFactory)
+        self.api = api.API(cherrypy.thread_data.connectionFactory)
         super(OrganismController, self).init_handler()
     
     
@@ -302,7 +302,7 @@ class TestController(ropy.server.RESTController):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
 
     def init_handler(self):
-        self.api = api.OrganismAPI(cherrypy.thread_data.connectionFactory)
+        self.api = api.API(cherrypy.thread_data.connectionFactory)
         super(TestController, self).init_handler()
 
     

@@ -18,7 +18,7 @@ import ropy.server
 
 logger = logging.getLogger("crawl")
 
-class FeatureAPI(object):
+class API(object):
     
     def __init__(self, connectionFactory):
         self.queries = Queries(connectionFactory)
@@ -375,10 +375,6 @@ class FeatureAPI(object):
         return self.queries.getAnnotationChangeCvterms()
     
 
-class OrganismAPI(object):
-    
-    def __init__(self, connectionFactory):
-        self.queries = Queries(connectionFactory)
     
     def getAllOrganismsAndTaxonIDs(self):
         organism_list = self.queries.getAllOrganismsAndTaxonIDs()
