@@ -47,7 +47,7 @@ class FeatureAPI(object):
         
         # bring in the new style changes
         # eventually, once all the privates have been migrated, we can remove the query above
-        rows_history = self.getGenesWithHistoryChanges(organism_id, since)
+        rows_history = self._getGenesWithHistoryChanges(organism_id, since)
         for row_history in rows_history:
             rows.append(row_history)
         
