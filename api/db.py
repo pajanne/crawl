@@ -46,13 +46,20 @@ class Queries(QueryProcessor):
         except:
             raise ServerException("Could not find organism for taxonID " + taxonID, ERROR_CODES["DATA_NOT_FOUND"])
     
-    def getGenesWithPrivateAnnotationChanges(self, organism_id, since):
+    def getGenesWithPrivateAnnotationChanges(self, organism_id, since, show_curator = False):
         # print organism_id
         returned = self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
         # print returned
         sinceDate = time.strptime(since,"%Y-%m-%d")
         results = []
         for result in returned:
+            
+            if show_curator == False:
+                del result["changecurator"] 
+            
+            # insert a tag so we know which query made it
+            result["source"] = "private"
+            
             resultDate = time.strptime(result["changedate"] ,"%Y-%m-%d")
             # print time.strftime("%Y-%m-%d",resultDate) + ">=" + time.strftime("%Y-%m-%d",sinceDate) + " = " + str(resultDate >= sinceDate)
             if (resultDate >= sinceDate):
@@ -67,6 +74,10 @@ class Queries(QueryProcessor):
             "curatorName_type_id" : curatorName_type_id,
             "qualifier_type_id" : qualifier_type_id
         })
+        
+        for result in returned:
+            result["source"] = "history"
+        
         return returned
     
     def countAllChangedFeaturesForOrganism(self, organism_id, since):

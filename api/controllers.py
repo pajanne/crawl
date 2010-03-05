@@ -41,7 +41,7 @@ class FeatureController(ropy.server.RESTController):
         """
             Reports all the features that have changed since a certain date.
         """
-        data = self.api.changes(since, taxonomyID)
+        data = self.api.gene_changes(since, taxonomyID)
         return data
     
     changes.arguments = { 
@@ -271,7 +271,7 @@ class OrganismController(ropy.server.RESTController):
         """
             Reports all the organisms, their taxononmyIDs and a count of how many features have changed since a certain date.
         """
-        data = self.api.changes(since)
+        data = self.api.organism_changes(since)
         return data
         
     changes.arguments = { "since" : "date formatted as YYYY-MM-DD" }

@@ -8,6 +8,7 @@
             transcriptuniquename="$result.transcriptuniquename"
             date="$result.changedate"
             change="$result.changedetail"
+            source="$result.source"
             />
     #end for
     </results>

@@ -23,7 +23,7 @@ class API(object):
     def __init__(self, connectionFactory):
         self.queries = Queries(connectionFactory)
     
-    def changes(self, since, taxonID):
+    def gene_changes(self, since, taxonID):
         logger.debug(since)
         logger.debug(taxonID)
         organism_id = self.queries.getOrganismFromTaxon(taxonID)
@@ -387,7 +387,7 @@ class API(object):
         }
         return data
     
-    def changes(self, since):
+    def organism_changes(self, since):
         logger.debug(since)
         
         organism_list = self.queries.getAllOrganismsAndTaxonIDs()

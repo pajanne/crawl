@@ -8,7 +8,6 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 """
 
 import sys
-import os
 import optparse
 import ConfigParser
 
@@ -27,7 +26,7 @@ def main():
     parser = optparse.OptionParser()
     parser.add_option("-c", "--conf", dest="conf", action="store", help="the path to the configuration file")
     
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args() #@UnusedVariable
     if options.conf == None: sys.exit("Please supply a conf parameter.")
 
     config = ConfigParser.ConfigParser()

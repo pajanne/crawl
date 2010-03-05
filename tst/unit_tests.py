@@ -306,13 +306,13 @@ def suite():
     
     return unittest.TestSuite([
         loader.loadTestsFromTestCase(HistoryTests), 
-        # loader.loadTestsFromTestCase(BoundaryTest), 
-        #         loader.loadTestsFromTestCase(FeatureLengthTest), 
-        #         loader.loadTestsFromTestCase(APITests),
-        #         loader.loadTestsFromTestCase(GeneTests), 
-        #         loader.loadTestsFromTestCase(BusinessTests), 
-        #         loader.loadTestsFromTestCase(BusinessTests2), 
-        #         loader.loadTestsFromTestCase(ClientServerTests)
+        loader.loadTestsFromTestCase(BoundaryTest), 
+        loader.loadTestsFromTestCase(FeatureLengthTest), 
+        loader.loadTestsFromTestCase(APITests),
+        loader.loadTestsFromTestCase(GeneTests), 
+        loader.loadTestsFromTestCase(BusinessTests), 
+        loader.loadTestsFromTestCase(BusinessTests2), 
+        loader.loadTestsFromTestCase(ClientServerTests)
     ])
     
 

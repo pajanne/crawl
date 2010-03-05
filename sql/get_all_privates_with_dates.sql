@@ -7,7 +7,8 @@ select
      , 'YYYY-MM-DD' 
     )
  as changedate, 
- split_part(fp.value, '; ', 3) as changedetail
+ split_part(fp.value, '; ', 3) as changedetail,
+ split_part(fp.value, '; ', 1) as changecurator
 from featureprop fp, feature transcript, feature mrna, feature gene, feature_relationship fr, feature_relationship fr2
 where fp.value like %s = true
 and fp.type_id = 26766 
