@@ -10,6 +10,7 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 import sys
 import optparse
 import ConfigParser
+import inspect
 
 try:
     import simplejson as json
@@ -19,18 +20,87 @@ except ImportError:
 import ropy.query
 import ropy.server
 
-from crawl.api.api import API
+import crawl.api.controllers
 
+def generate_optparser():
+    parser = optparse.OptionParser()
+    parser.usage = parser.usage.replace("[options]", "config class method [options]")
+    return parser
+
+def call_method(api, method_name):
+    
+    if hasattr(api, method_name):
+        method= getattr(api, method_name)
+        if inspect.ismethod(method):
+            
+            parser = generate_optparser()
+                        
+            for argument, description in method.arguments.items():
+                parser.add_option(
+                    "-" + argument[0],
+                    "--" + argument,
+                    dest=argument,
+                    action="store", 
+                    help=description
+                )
+            
+            (options, args) = parser.parse_args() #@UnusedVariable
+            
+            arg_values = {}
+            for argument in method.arguments.keys():
+                arg_value = getattr(options, argument)
+                if arg_value != None:
+                    arg_values[argument] = arg_value
+            
+            try:
+                return method(**arg_values)
+            except ropy.server.ServerException, se: #@UnusedVariable
+                return ropy.server.generate_error_data()
+                
+            
+        else:
+            raise Exception("%s is not a method of the API." % method_name)
+    else:
+        raise Exception("%s is not an attribute of the API." % method_name)
+    
+
+#def get_class( kls ):
+#    parts = kls.split('.')
+#    module = ".".join(parts[:-1])
+#    m = __import__( module )
+#    for comp in parts[1:]:
+#        m = getattr(m, comp)            
+#    return m
 
 def main():
-    parser = optparse.OptionParser()
-    parser.add_option("-c", "--conf", dest="conf", action="store", help="the path to the configuration file")
     
-    (options, args) = parser.parse_args() #@UnusedVariable
-    if options.conf == None: sys.exit("Please supply a conf parameter.")
-
+    
+    if len(sys.argv) < 2:
+        print "Please provide a path to the conf file as your first argument."
+        parser = generate_optparser()
+        parser.print_help()
+        sys.exit()
+    else:
+        conf = sys.argv[1]
+    
+    if len(sys.argv) < 3:
+        print "Please provide the class as your second argument."
+        parser = generate_optparser()
+        parser.print_help()
+        sys.exit()
+    else:
+        class_name = sys.argv[2]
+    
+    if len(sys.argv) < 4:
+        print "Please provide the method as your third argument."
+        parser = generate_optparser()
+        parser.print_help()
+        sys.exit()
+    else:
+        method_name = sys.argv[3]
+    
     config = ConfigParser.ConfigParser()
-    config.read(options.conf)
+    config.read(conf)
 
     # cherrypy file-configs must be valid python expressions, they get eval()ed
     host=eval(config.get('Connection', 'host'))
@@ -40,11 +110,24 @@ def main():
 
     connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
     
-    api = API(connectionFactory)
-    result = api.annotation_changes('5671', '2009-10-03')
+    # flag the server module that the execution isn't over HTTP
+    ropy.server.serve = False
+    
+    # the class must be a controller in the controller module
+    api_class = getattr(crawl.api.controllers, class_name)
+    api = api_class()
+    
+    if not isinstance(api, crawl.api.controllers.BaseController):
+        print "The class must be a BaseController instance."
+        parser = generate_optparser()
+        parser.print_help()
+        sys.exit()
+    
+    api.set_connection_factory_for_cli_execution(connectionFactory)
+    result = call_method(api, method_name)
     
     print ropy.server.Formatter(result).formatJSON()
-
+    
 
 if __name__ == '__main__':
     main()

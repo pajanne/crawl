@@ -20,20 +20,28 @@ logger = logging.getLogger("crawl")
 import ropy.server
 import api
 
-
-
-class FeatureController(ropy.server.RESTController):
+class BaseController(ropy.server.RESTController):
     """
-        Feature related queries.
+        An abstract class with common methods shared by crawl controllers. Not to be instantiated directly.
     """
+    
+    def set_connection_factory_for_cli_execution(self, connection_factory):
+        """
+            Used if the instance is going to be called from another environment, not within a cherrypy context. 
+        """
+        self.api = api.API(connection_factory)
     
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
     
     def init_handler(self):
         self.api = api.API(cherrypy.thread_data.connectionFactory)
-        super(FeatureController, self).init_handler()
+        super(BaseController, self).init_handler()
     
+class FeatureController(BaseController):
+    """
+        Feature related queries.
+    """
     
     @cherrypy.expose
     @ropy.server.service_format("changes")
@@ -179,17 +187,10 @@ class FeatureController(ropy.server.RESTController):
     historyeventtypes.arguments = { }
     
 
-class SourceFeatureController(ropy.server.RESTController):
+class SourceFeatureController(BaseController):
     """
         Source feature related queries.
     """
-    
-    def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-    
-    def init_handler(self):
-        self.api = api.API(cherrypy.thread_data.connectionFactory)
-        super(SourceFeatureController, self).init_handler()
     
     
     @cherrypy.expose
@@ -252,17 +253,10 @@ class SourceFeatureController(ropy.server.RESTController):
     #             s.append(db.name + "\n")
     #         return s
 
-class OrganismController(ropy.server.RESTController):
+class OrganismController(BaseController):
     """
         Organism related queries.
     """
-    
-    def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-    
-    def init_handler(self):
-        self.api = api.API(cherrypy.thread_data.connectionFactory)
-        super(OrganismController, self).init_handler()
     
     
     @cherrypy.expose
@@ -293,18 +287,12 @@ class OrganismController(ropy.server.RESTController):
 
 
 
-class TestController(ropy.server.RESTController):
+class TestController(BaseController):
     """
         Test related queries.
     """
 
-    def __init__(self):
-        self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
-
-    def init_handler(self):
-        self.api = api.API(cherrypy.thread_data.connectionFactory)
-        super(TestController, self).init_handler()
-
+    
     
     @cherrypy.expose
     @ropy.server.service_format()
