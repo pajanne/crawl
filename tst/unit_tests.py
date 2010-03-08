@@ -18,7 +18,7 @@ import optparse
 
 
 from crawl.api.db import Queries
-from crawl.api.api import API
+from crawl.api.controllers import Genes
 
 import ropy.query
 from ropy.client import RopyClient, ServerReportedException
@@ -44,7 +44,8 @@ connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
 
 class HistoryTests(unittest.TestCase):
     def setUp(self):
-        self.api = API(connectionFactory)
+        self.api = Genes()
+        self.api.queries = Queries(connectionFactory)
     
     def testGetCVTermHash(self):
         result = self.api._getHistoryCvtermPropTypeIDs()
@@ -55,7 +56,7 @@ class HistoryTests(unittest.TestCase):
         print Formatter(result).formatJSON()
         
     def testCombinedHistory(self):
-        result = self.api.annotation_changes('5671', '2009-10-03')
+        result = self.api.annotation_changes( taxonomyID='5671', since='2009-10-03' )
         print Formatter(result).formatJSON()
     
 
@@ -117,10 +118,15 @@ class GeneTests(unittest.TestCase):
 class APITests(unittest.TestCase):
     
     def setUp(self):
-        self.api = API(connectionFactory)
+        self.api = Genes()
+        self.api.queries = Queries(connectionFactory)
     
     def test1(self):
-        cvterms = self.api.getFeatureCVTerm(["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep"], ["biological_process", "molecular_function"])
+        cvterms = self.api.featurecvterm(features=["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep", "SAR1447:pep"], cvs=["biological_process", "molecular_function"])
+        print Formatter(cvterms).formatJSON()
+    
+    def test2(self):
+        cvterms = self.api.featurecvterm(features=["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep", "SAR1447:pep"])
         print Formatter(cvterms).formatJSON()
 
 class BusinessTests(unittest.TestCase):

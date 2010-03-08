@@ -177,8 +177,25 @@ class Queries(QueryProcessor):
     def getExonCoordinates(self, sourcefeature, genes):
         return self.runQueryAndMakeDictionary("get_exon_coordinates", {"sourcefeature":sourcefeature, "genenames":tuple(genes)} )
     
-    def getFeatureCVTerm(self, features, cv_names):
-        return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cv" : tuple(cv_names) })
+    def getFeatureCVTerm(self, features, cvs):
+        if cvs == None or len(cvs) == 0:
+            return self.runQueryAndMakeDictionary("get_feature_cvterms_all", {"features" : tuple(features) })
+        return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cvs" : tuple(cvs) })
+    
+    def getFeatureCVTermPub(self, feature_cvterm_id):
+        results = self.runQuery("get_feature_cvterm_pubs", {"feature_cvterm_id" : feature_cvterm_id })
+        to_return = []
+        for result in results:
+            if result[0] != "null":
+                to_return.append(result[0])
+        return to_return
+    
+    def getFeatureCVTermDbxrefs(self, feature_cvterm_id):
+        results = self.runQuery("get_feature_cvterm_dbxrefs", {"feature_cvterm_id" : feature_cvterm_id })
+        to_return = []
+        for result in results:
+            to_return.append(result[0])
+        return to_return
     
     def getAnnotationChangeCvterms(self):
         return self.runQueryAndMakeDictionary("get_annotation_change_cvterms")

@@ -84,12 +84,12 @@ def main():
     
     # make a tree of controller instances
     root = Root()
-    root.genes = api.controllers.FeatureController()
-    root.organisms = api.controllers.OrganismController()
-    root.sourcefeatures = api.controllers.SourceFeatureController()
+    root.genes = api.controllers.Genes()
+    root.organisms = api.controllers.Organisms()
+    root.sourcefeatures = api.controllers.SourceFeatures()
     
     if options.test == True:
-        root.testing = api.controllers.TestController()
+        root.testing = api.controllers.Testing()
     
     # we want to use a custom dispatcher that's configured to know about .json and .xml extensions
     mapper = cherrypy.dispatch.RoutesDispatcher()
@@ -143,6 +143,7 @@ def main():
     # import ropy.alchemy.sqlalchemy_tool
     import ropy.psy.psycopg2_tool #@UnusedImport
     
+    ropy.server.serve()
     
     # cherrypy.quickstart(root, "/", options.conf)
     app = cherrypy.tree.mount(root, "/", appconfig)

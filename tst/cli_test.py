@@ -21,6 +21,7 @@ import ropy.query
 import ropy.server
 
 import crawl.api.controllers
+import crawl.api.db
 
 def generate_optparser():
     parser = optparse.OptionParser()
@@ -110,9 +111,6 @@ def main():
 
     connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
     
-    # flag the server module that the execution isn't over HTTP
-    ropy.server.serve = False
-    
     # the class must be a controller in the controller module
     api_class = getattr(crawl.api.controllers, class_name)
     api = api_class()
@@ -123,7 +121,8 @@ def main():
         parser.print_help()
         sys.exit()
     
-    api.set_connection_factory_for_cli_execution(connectionFactory)
+    api.queries = crawl.api.db.Queries(connectionFactory)
+    
     result = call_method(api, method_name)
     
     print ropy.server.Formatter(result).formatJSON()
