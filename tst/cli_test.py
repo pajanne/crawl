@@ -111,10 +111,21 @@ def main():
 
     connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
     
-    # the class must be a controller in the controller module
-    api_class = getattr(crawl.api.controllers, class_name)
-    api = api_class()
-    
+    api = None
+    for attr_tuple in inspect.getmembers(crawl.api.controllers):
+        attr_key = attr_tuple[0] #@UnusedVariable
+        attr = attr_tuple[1]
+        if inspect.isclass(attr):
+            if attr.__name__.lower() == class_name:
+                api = attr()
+                break
+                
+    if api == None:
+        print "Could not find an api of " + class_name
+        parser = generate_optparser()
+        parser.print_help()
+        sys.exit()
+        
     if not isinstance(api, crawl.api.controllers.BaseController):
         print "The class must be a BaseController instance."
         parser = generate_optparser()
@@ -122,7 +133,6 @@ def main():
         sys.exit()
     
     api.queries = crawl.api.db.Queries(connectionFactory)
-    
     result = call_method(api, method_name)
     
     print ropy.server.Formatter(result).formatJSON()
