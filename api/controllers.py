@@ -32,6 +32,7 @@ class BaseController(ropy.server.RESTController):
         # declaring an instance variable, which will be called by most methods, must set if the controller is instantiated out of a server context
         # designed to be a db.Queries instance
         self.queries = None
+        
     
     def init_handler(self):
         self.queries = db.Queries(cherrypy.thread_data.connectionFactory)
