@@ -36,7 +36,7 @@ def call_method(api, method_name):
         if inspect.ismethod(method):
             
             parser = generate_optparser()
-                        
+            
             for argument, description in method.arguments.items():
                 parser.add_option(
                     "-" + argument[0],
