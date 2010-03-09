@@ -48,7 +48,7 @@ class Queries(QueryProcessor):
     
     def getGenesWithPrivateAnnotationChanges(self, organism_id, since, show_curator = False):
         # print organism_id
-        returned = self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("%curator_%", organism_id, 'date_%' ))
+        returned = self.runQueryAndMakeDictionary("get_all_privates_with_dates", ("curator_%", organism_id, 'date_%' ))
         # print returned
         sinceDate = time.strptime(since,"%Y-%m-%d")
         results = []
