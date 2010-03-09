@@ -346,6 +346,8 @@ class Genes(BaseController):
                     cvterm_store[cvterm_store_key] = {
                         "cvterm" : result["cvterm"],
                         "cv" : result["cv"],
+                        "is_not" : result["is_not"],
+                        "accession" : result["accession"],
                         "props" : [],
                         "pubs": self.queries.getFeatureCVTermPub(result["feature_cvterm_id"]),
                         "dbxrefs" : self.queries.getFeatureCVTermDbxrefs(result["feature_cvterm_id"])
