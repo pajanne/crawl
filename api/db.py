@@ -187,7 +187,8 @@ class Queries(QueryProcessor):
         to_return = []
         for result in results:
             if result[0] != "null":
-                to_return.append(result[0])
+                split = result[0].split(":")
+                to_return.append({"database" : split[0], "accession" : split[1]})
         return to_return
     
     def getFeatureCVTermDbxrefs(self, feature_cvterm_id):
