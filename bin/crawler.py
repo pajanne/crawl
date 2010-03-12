@@ -8,9 +8,8 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 """
 
 import sys
-import optparse
-import ConfigParser
 import inspect
+from util.password import get_password
 
 try:
     import simplejson as json
@@ -23,42 +22,49 @@ import ropy.server
 import crawl.api.db
 import crawl.api.controllers
 
+import logging
+logger = logging.getLogger("crawl")
 
-def generate_optparser():
-    parser = optparse.OptionParser()
-    parser.usage = parser.usage.replace("[options]", "config class method [options]")
-    return parser
+BASIC_USAGE = """
+Usage:  python crawler.py -set [set_name] -query [query_name] [options] -database host:5432/database?user
+"""
 
-def call_method(api, method_name):
+DEFAULT_URL = "localhost:5432/pathogens?pathdb"
+
+def get_args():
+    args = {}
+    key = None
+    for arg in sys.argv:
+        if arg[0] == "-": key = arg[1:len(arg)]
+        else:
+            if key !=None:
+                if key not in args: 
+                    args[key] = []
+                args[key].append(arg)
+    for k,v in args.items():
+        if len(v) == 1:
+            args[k] = v[0]
+    return args
+
+
+def call_method(api, method_name, args):
     
     if hasattr(api, method_name):
         method= getattr(api, method_name)
         if inspect.ismethod(method):
             
-            parser = generate_optparser()
-            
-            for argument, description in method.arguments.items():
-                parser.add_option(
-                    "-" + argument[0],
-                    "--" + argument,
-                    dest=argument,
-                    action="store", 
-                    help=description
-                )
-            
-            (options, args) = parser.parse_args() #@UnusedVariable
-            
-            arg_values = {}
-            for argument in method.arguments.keys():
-                arg_value = getattr(options, argument)
-                if arg_value != None:
-                    arg_values[argument] = arg_value
-            
             try:
-                return method(**arg_values)
+                return method(**args)
             except ropy.server.ServerException, se: #@UnusedVariable
-                return ropy.server.generate_error_data()
+                print se.value
                 
+                for arg_key, arg_doc in method.arguments.items():
+                    print BASIC_USAGE
+                    print "-" + arg_key
+                    print "\t" + arg_doc
+                
+                # make sure the script status code is not 0
+                sys.exit(se.code+1)
             
         else:
             raise Exception("%s is not a method of the API." % method_name)
@@ -66,77 +72,99 @@ def call_method(api, method_name):
         raise Exception("%s is not an attribute of the API." % method_name)
     
 
-#def get_class( kls ):
-#    parts = kls.split('.')
-#    module = ".".join(parts[:-1])
-#    m = __import__( module )
-#    for comp in parts[1:]:
-#        m = getattr(m, comp)            
-#    return m
+def get_classes():
+    attrs = []
+    for attr_tuple in inspect.getmembers(crawl.api.controllers):
+        attr_key = attr_tuple[0]
+        attr = attr_tuple[1]
+        if inspect.isclass(attr) and attr_key != "BaseController":
+            attrs.append(attr)
+    return attrs
+
+def print_classes():
+    print "Available sets are:\n"
+    for the_class in get_classes():
+        print "\t" + the_class.__name__.lower()
+
+def get_methods(obj):
+    methods = []
+    for member_info in inspect.getmembers(obj):
+        member_name = member_info[0] #@UnusedVariable
+        member = member_info[1]
+        if inspect.ismethod(member) and hasattr(member, "exposed"):
+            methods.append(member_info)
+    return methods
+
+def print_methods(obj):
+    print "Available %s queries are: \n" % obj.__class__.__name__.lower()
+    for member_info in get_methods(obj):
+        member_name = member_info[0]
+        member = member_info[1] #@UnusedVariable
+        print "\t" + member_name
+
+def get_api(path):
+    api = None
+    for the_class in get_classes():
+        if the_class.__name__.lower() == path:
+            api = the_class()
+            break
+
+    if api == None:
+        print "Could not find a path of %s.\n" % path
+        print_classes()
+        sys.exit(BASIC_USAGE)
+
+    if not isinstance(api, crawl.api.controllers.BaseController):
+        print "The class must be a BaseController instance.\n"
+        print_classes()
+        sys.exit(BASIC_USAGE)
+    return api
+
+def execute(path, function, args, database_uri):
+    #"localhost:port/database?user"
+    
+    ((host, port), (database, user)) = [database_uri.split("/")[0].split(":"), database_uri.split("/")[1].split("?")]
+    logger.debug ("host %s port %s database %s user %s" % (host, port, database, user))
+    
+    password = get_password("password")
+    
+    api = get_api(path)
+    connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
+    api.queries = crawl.api.db.Queries(connectionFactory)
+    
+    result = call_method(api, function, args)
+    
+    return ropy.server.Formatter(result).formatJSON()
+    
 
 def main():
     
+    args = get_args()
     
-    if len(sys.argv) < 2:
-        print "Please provide a path to the conf file as your first argument."
-        parser = generate_optparser()
-        parser.print_help()
-        sys.exit()
+    if "database" not in args: 
+        database = DEFAULT_URL
     else:
-        conf = sys.argv[1]
-    
-    if len(sys.argv) < 3:
-        print "Please provide the class as your second argument."
-        parser = generate_optparser()
-        parser.print_help()
-        sys.exit()
+        database = args["database"]
+        del args["database"]
+            
+    if "set" not in args:
+        print "Please provide a -set argument."
+        print_classes()
+        sys.exit(BASIC_USAGE)
     else:
-        class_name = sys.argv[2]
+        set = args["set"]
+        del args["set"]
     
-    if len(sys.argv) < 4:
-        print "Please provide the method as your third argument."
-        parser = generate_optparser()
-        parser.print_help()
-        sys.exit()
+    if "query" not in args:
+        print "Please provide a -query argument."
+        api = get_api(set)
+        print_methods(api)
+        sys.exit(BASIC_USAGE)
     else:
-        method_name = sys.argv[3]
+        query = args["query"]
+        del args["query"]
     
-    config = ConfigParser.ConfigParser()
-    config.read(conf)
-
-    # cherrypy file-configs must be valid python expressions, they get eval()ed
-    host=eval(config.get('Connection', 'host'))
-    database=eval(config.get('Connection', 'database'))
-    user=eval(config.get('Connection', 'user'))
-    password=eval(config.get('Connection', 'password'))
-
-    connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
-    
-    api = None
-    for attr_tuple in inspect.getmembers(crawl.api.controllers):
-        attr_key = attr_tuple[0] #@UnusedVariable
-        attr = attr_tuple[1]
-        if inspect.isclass(attr):
-            if attr.__name__.lower() == class_name:
-                api = attr()
-                break
-                
-    if api == None:
-        print "Could not find an api of " + class_name
-        parser = generate_optparser()
-        parser.print_help()
-        sys.exit()
-        
-    if not isinstance(api, crawl.api.controllers.BaseController):
-        print "The class must be a BaseController instance."
-        parser = generate_optparser()
-        parser.print_help()
-        sys.exit()
-    
-    api.queries = crawl.api.db.Queries(connectionFactory)
-    result = call_method(api, method_name)
-    
-    print ropy.server.Formatter(result).formatJSON()
+    print execute(set, query, args, database)
     
 
 if __name__ == '__main__':
