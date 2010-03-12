@@ -24,8 +24,8 @@ class BaseController(ropy.server.RESTController):
     """
         An abstract class with common methods shared by crawl controllers. Not to be instantiated directly.
     """
-    
-#   
+   
+   
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
         
@@ -154,25 +154,24 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featureproperties(self, **kwargs):
+    def featureproperties(self, uniqueNames=[], u=[], us=None, delimiter = ","):
         """
             Returns featureprops for a given set of uniqueNames.
         """
         
         # build the uniqueNames array from different possilble kwargs
-        uniqueNames = ropy.server.get_array_from_hash("uniqueNames", kwargs)
-        uniqueNames2 = ropy.server.get_array_from_hash("u", kwargs)
+        uniqueNames = ropy.server.to_array(uniqueNames) #ropy.server.get_array_from_hash("uniqueNames", kwargs)
         
-        if len(uniqueNames2) > 0: uniqueNames.extend(uniqueNames2)
+        u = ropy.server.to_array(u)
+        if len(u) > 0: uniqueNames.extend(u)
         
         # special case of arrays being passed using the us parameter, with the delimiter
-        delimiter = kwargs["delimiter"] if "delimiter" in kwargs else ","
-        if "us" in kwargs: uniqueNames.extend(kwargs["us"].split(delimiter))
+        if us != None: uniqueNames.extend(us.split(delimiter))
         
         logger.debug(uniqueNames)
         
         if len(uniqueNames) == 0: 
-            raise ropy.server.ServerException("Please provide at least one uniqueNames / u / us parameter.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+            raise ropy.server.ServerException("Please provide at least one  uniqueName using either the uniqueNames, u or us parameters.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
         
         
         results = self.queries.getFeatureProps(uniqueNames)
@@ -208,7 +207,7 @@ class Genes(BaseController):
     featureproperties.arguments = {
         "uniqueName" : "the uniqueName of the feature whose properties you're after",
         "u" : "shorthand for the uniqueName parameter",
-        "us" : "a single string making up a list of uniqueNames, delimmited by the delimiter parameter",
+        "us" : "a single string making up a list of uniqueNames, delimited by the delimiter parameter",
         "delimiter" : "instructs how to split strings, defaults to a comma(,)"
     }
     
@@ -234,11 +233,12 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def residues(self, sourcefeature, **kwargs):
+    def residues(self, sourcefeature, features):
         """
             Returns the sequences of features mapped onto a source feature.
         """
-        features = ropy.server.get_array_from_hash("features", kwargs, True)
+        #features = ropy.server.get_array_from_hash("features", kwargs, True)
+        features = ropy.server.to_array(features)
         logger.debug(features)
         #return self.api.getFeatureResiduesFromSourceFeature(sourcefeature, features)
         results = self.queries.getFeatureResiduesFromSourceFeature(sourcefeature, features)
@@ -256,11 +256,13 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def mrnaresidues(self, **kwargs):
+    def mrnaresidues(self, genenames):
         """
             Returns a mRNA sequences for a list of genes.
         """
-        genenames = ropy.server.get_array_from_hash("genenames", kwargs)
+        
+        genenames = ropy.server.to_array(genenames)
+        #genenames = ropy.server.get_array_from_hash("genenames", kwargs)
         results = self.queries.getMRNAs(genenames)
         data = {
             "response" : {
@@ -277,11 +279,12 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def polypeptideresidues(self, **kwargs):
+    def polypeptideresidues(self, genenames):
         """
             Returns a polypeptide sequences for a list of genes.
         """
-        genenames = ropy.server.get_array_from_hash("genenames", kwargs)
+        genenames = ropy.server.to_array(genenames)
+        #genenames = ropy.server.get_array_from_hash("genenames", kwargs)
         results = self.queries.getPEPs(genenames)
         data = {
             "response" : {
@@ -315,16 +318,17 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featurecvterm(self, **kwargs):
+    def featurecvterm(self, features, cvs = []):
         """
             Returns cvterms of type cv_names associated with list of features.
         """
-        #return self.api.getFeatureCVTerm(features, cvnames)
-        features = ropy.server.get_array_from_hash("features", kwargs)
         
-        if len (features) == 0: raise ropy.server.ServerException("Please supply at least one feature parameter", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+        features = ropy.server.to_array(features)
+        cvs = ropy.server.to_array(cvs)
         
-        cvs = ropy.server.get_array_from_hash("cvs", kwargs)
+        logger.debug(features)
+        logger.debug(cvs)
+        
         results = self.queries.getFeatureCVTerm(features, cvs)
         
         to_return = []
@@ -378,14 +382,45 @@ class Genes(BaseController):
         "cvs": "the names of the cvs" 
     }
     
-    def historyeventtypes(self):
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def orthologues(self, features, **kwargs):
         """
-            Returns the types of history events.
+           Returns orthologues for a list of features.
         """
-        return self.queries.getAnnotationChangeCvterms();
-    historyeventtypes.arguments = { }
+        
+        features = ropy.server.to_array(features)
+        results = self.queries.getOrthologues(features)
+        
+        orthologues = []
+        ortho_store = {}
+        for result in results:
+            feature = result["feature"]
+            #delete result["feature"]
+            if feature not in ortho_store:
+                ortho_store[feature] = {
+                    "feature" : feature,
+                    "orthologues" : []
+                }
+                orthologues.append(ortho_store[feature])
+            ortho_store[feature]["orthologues"].append(result)
+        
+        ortho_store = None
+        
+        data = {
+            "response" : {
+                "name" : "genes/orthologues",
+                "features" : orthologues
+            }
+        }
+        return data
+    orthologues.arguments = {
+        "features" : "the features"
+    }
     
     
+    @cherrypy.expose
+    @ropy.server.service_format()
     def featurecoordinates(self, sourcefeature, features):
         results = self.queries.getFeatureCoordinates(sourcefeature, features)
         
@@ -400,8 +435,13 @@ class Genes(BaseController):
         "sourcefeature" : "the sourcefeature upon which the features are located", 
         "features": "the features" 
     }
-
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
     def exoncoordinates(self, sourcefeature, genes):
+        """
+           Returns the exons coordinates for a list of genes.
+        """
         results = self.queries.getExonCoordinates(sourcefeature, genes)
         data = {
             "response" : {
@@ -415,7 +455,12 @@ class Genes(BaseController):
         "features": "the gene features" 
     }
     
+    @cherrypy.expose
+    @ropy.server.service_format()
     def annotationchangecvterms(self):
+        """
+           Returns the members of the controlled vocabulary used to type biologically meaningful annotation changes.
+        """
         data = {
             "response" : {
                 "name" :"genes/annotationchangecvterms",
@@ -469,12 +514,13 @@ class SourceFeatures(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featureloc(self, uniqueName, start, end, **kwargs):
+    def featureloc(self, uniqueName, start, end, relationships = []):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         
-        relationships = ropy.server.get_array_from_hash("relationships", kwargs)
+        #relationships = ropy.server.get_array_from_hash("relationships", kwargs)
+        relationships = ropy.server.to_array(relationships)
         # logger.debug(relationships)
         
         if len(relationships) == 0: 
@@ -482,13 +528,6 @@ class SourceFeatures(BaseController):
         
         logger.debug(relationships)
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
-        
-        #data = self.api.getFeatureLoc(uniqueName, start, end, relationships)
-        
-        #relationships = []
-        
-        
-        
         
         
         sourceFeatureID = self.queries.getFeatureID(uniqueName)
@@ -682,9 +721,9 @@ class Organisms(BaseController):
         """
             Lists all organisms and their taxonomyIDs. 
         """
-        logger.debug("?")
+        # logger.debug("?")
         organism_list = self.queries.getAllOrganismsAndTaxonIDs()
-        logger.debug(organism_list)
+        # logger.debug(organism_list)
         data = {
             "response" : {
                 "name" : "organisms/list",
@@ -696,7 +735,6 @@ class Organisms(BaseController):
     
     list.arguments = {}
     
-
 
 
 class Testing(BaseController):

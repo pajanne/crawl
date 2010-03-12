@@ -201,6 +201,9 @@ class Queries(QueryProcessor):
     def getAnnotationChangeCvterms(self):
         return self.runQueryAndMakeDictionary("get_annotation_change_cvterms")
     
+    def getOrthologues(self, features):
+        return self.runQueryAndMakeDictionary("get_orthologue", {"features" : tuple(features)})
+    
     def validateDate(self, date):
         try:
             time.strptime(date,"%Y-%m-%d")
