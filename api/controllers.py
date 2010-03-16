@@ -680,26 +680,6 @@ class SourceFeatures(BaseController):
     
     
     
-    
-    
-    
-    
-    # use example of how to make an alchemy controller...
-    # @cherrypy.expose
-    #     def test(self):
-    #         from ropy.alchemy.sqlalchemy_tool import session
-    #         dbs = session.query(Db)
-    #         s = []
-    #         for db in dbs:
-    #             s.append(db.name + "\n")
-    #         return s
-
-class Organisms(BaseController):
-    """
-        Organism related queries.
-    """
-    
-    
     @cherrypy.expose
     @ropy.server.service_format()
     def top(self, taxonID):
@@ -722,6 +702,26 @@ class Organisms(BaseController):
     top.arguments = {
         "taxonID" : "the taxonID of the organism you want to browse"
     }
+    
+    
+    
+    
+    
+    # use example of how to make an alchemy controller...
+    # @cherrypy.expose
+    #     def test(self):
+    #         from ropy.alchemy.sqlalchemy_tool import session
+    #         dbs = session.query(Db)
+    #         s = []
+    #         for db in dbs:
+    #             s.append(db.name + "\n")
+    #         return s
+
+class Organisms(BaseController):
+    """
+        Organism related queries.
+    """
+    
     
     
     @cherrypy.expose
