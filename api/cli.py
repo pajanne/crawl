@@ -12,8 +12,9 @@ import inspect
 import ropy.query
 import ropy.server
 import util.password
-import crawl.api.db
-import crawl.api.controllers
+
+import db
+import controllers
 
 import logging
 logger = logging.getLogger("crawl")
@@ -71,7 +72,7 @@ def call_method(api, method_name, args):
 
 def get_classes():
     attrs = []
-    for attr_tuple in inspect.getmembers(crawl.api.controllers):
+    for attr_tuple in inspect.getmembers(controllers):
         attr_key = attr_tuple[0]
         attr = attr_tuple[1]
         if inspect.isclass(attr) and attr_key != "BaseController":
@@ -110,7 +111,7 @@ def get_api(path):
     if api == None:
         raise ropy.server.ServerException("Could not find a path of %s.\n" % path,  ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
 
-    if not isinstance(api, crawl.api.controllers.BaseController):
+    if not isinstance(api, controllers.BaseController):
         raise ropy.server.ServerException("The path %s must specify a class that inherits from BaseController.\n" % path,  ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
     return api
 
@@ -146,7 +147,7 @@ def execute(path, function, args, database_uri, password):
     
     api = get_api(path)
     connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
-    api.queries = crawl.api.db.Queries(connectionFactory)
+    api.queries = db.Queries(connectionFactory)
     
     # make the call
     result = call_method(api, function, args)
