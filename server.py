@@ -85,6 +85,7 @@ def main():
     # make a tree of controller instances
     root = Root()
     root.genes = api.controllers.Genes()
+    root.features = api.controllers.Features();
     root.organisms = api.controllers.Organisms()
     root.sourcefeatures = api.controllers.SourceFeatures()
     

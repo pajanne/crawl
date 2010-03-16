@@ -25,7 +25,6 @@ class BaseController(ropy.server.RESTController):
         An abstract class with common methods shared by crawl controllers. Not to be instantiated directly.
     """
    
-   
     def __init__(self):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
         
@@ -41,8 +40,133 @@ class BaseController(ropy.server.RESTController):
     
 class Genes(BaseController):
     """
-        Feature related queries.
+        Gene related queries.
     """
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def inorganism(self, taxonID):
+        """
+            Returns a list of genes in an organism.
+        """
+        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        results = self.queries.getCDSs(organism_id)
+        data = {
+            "response" : {
+                "name" : "genes/list",
+                "genes" : results
+            }
+        }
+        return data
+        #return self.api.getCDSs(taxonID)
+    inorganism.arguments = {
+        "taxonID" : "the taxonID of the organism you wish to obtain genes from"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def inregion(self, region):
+        """
+            Returns a list of genes located on a particular source feature (e.g. a contig).
+        """
+        genes = self.queries.getGenes(region)
+        data = {
+            "response" : {
+                "name" : "genes/inregion",
+                "genes" : genes
+            }
+        }
+        return data
+    inregion.arguments = {
+        "region" : "the name of a region, i.e. one of the entries returned by /top.",
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def residues(self, region, genes = []):
+        """
+            Returns a list of genes located on a particular region (e.g. a contig), with their sequences extracted from that region.
+        """
+        genes = ropy.server.to_array(genes)
+        residues = self.queries.getGeneSequence(region, genes)
+        data = {
+            "response" : {
+                "name" : "genes/residues",
+                "residues" : residues
+            }
+        }
+        return data
+    residues.arguments = {
+        "region" : "the name of a region, i.e. one of the entries returned by /top.",
+        "genes" : "a list of genes, for instance as supplied by the /inregion or /inorganism queries."
+    }
+    
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def mrnaresidues(self, genes):
+        """
+            Returns a mRNA sequences for a list of genes.
+        """
+        genes = ropy.server.to_array(genes)
+        results = self.queries.getMRNAs(genes)
+        data = {
+            "response" : {
+                "name" : "genes/mrnaresidues",
+                "mrnas" : results
+            }
+        }
+        return data
+        #return self.api.getMRNAs(genenames)
+    mrnaresidues.arguments = {
+        "genes" : "a list of genes"
+    }
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def polypeptideresidues(self, genes):
+        """
+            Returns a polypeptide sequences for a list of genes.
+        """
+        genes = ropy.server.to_array(genes)
+        #genenames = ropy.server.get_array_from_hash("genenames", kwargs)
+        results = self.queries.getPEPs(genes)
+        data = {
+            "response" : {
+                "name" : "genes/polypeptideresidues",
+                "polypeptides" : results
+            }
+        }
+        return data
+#        return self.api.getPEPs(genenames)
+    polypeptideresidues.arguments = {
+        "genes" : "a list of genes"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def exons(self, region, genes = []):
+        """
+           Returns the exons coordinates for a list of genes.
+        """
+        genes = ropy.server.to_array(genes)
+        results = self.queries.getExons(region, genes)
+        data = {
+            "response" : {
+                "name" :"genes/exons",
+                "coordinates" : results
+            }
+        }
+        return data
+    exons.arguments = {
+        "region" : "the region upon which the genes are located", 
+        "genes": "the gene features" 
+    }
+    
+    
     
     @cherrypy.expose
     @ropy.server.service_format("changes")
@@ -127,30 +251,27 @@ class Genes(BaseController):
         return cvterm_infos
     
     
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def top(self, taxonID):
-        """
-            Returns a list of top level features for an organism.
-        """
-        organism_id = self.queries.getOrganismFromTaxon(taxonID)
-        results = self.queries.getTopLevel(organism_id)
-        
-        data = {
-           "response" : {
-               "name" : "genes/top",
-               "taxonId" : taxonID,
-               "features" : results
-           }
-        }
-        #data = self.api.getTopLevel(taxonID)
-        return data
     
-    top.arguments = {
-        "taxonID" : "the taxonID of the organism you want to browse"
-    }
-    
-    
+#    @cherrypy.expose
+#    @ropy.server.service_format()
+#    def annotationchangecvterms(self):
+#        """
+#           Returns the members of the controlled vocabulary used to type biologically meaningful annotation changes.
+#        """
+#        data = {
+#            "response" : {
+#                "name" :"genes/annotationchangecvterms",
+#                "coordinates" : self.queries.getAnnotationChangeCvterms()
+#            }
+#        }
+#        return data
+#    annotationchangecvterms.arguments = {}
+
+
+class Features(BaseController):
+    """
+        Feature related queries.
+    """
     
     @cherrypy.expose
     @ropy.server.service_format()
@@ -213,94 +334,6 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def list(self, taxonID):
-        """
-            Returns a list of genes in an organism.
-        """
-        organism_id = self.queries.getOrganismFromTaxon(taxonID)
-        results = self.queries.getCDSs(organism_id)
-        data = {
-            "response" : {
-                "name" : "genes/list",
-                "genes" : results
-            }
-        }
-        return data
-        #return self.api.getCDSs(taxonID)
-    list.arguments = {
-        "taxonID" : "the taxonID of the organism you wish to obtain genes from"
-    }
-    
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def residues(self, sourcefeature, features):
-        """
-            Returns the sequences of features mapped onto a source feature.
-        """
-        #features = ropy.server.get_array_from_hash("features", kwargs, True)
-        features = ropy.server.to_array(features)
-        logger.debug(features)
-        #return self.api.getFeatureResiduesFromSourceFeature(sourcefeature, features)
-        results = self.queries.getFeatureResiduesFromSourceFeature(sourcefeature, features)
-        data = {
-            "response" : {
-                "name" : "genes/residues",
-                "residues" : results
-            }
-        }
-        return data
-    residues.arguments = {
-        "sourcefeature" : "the uniquename of a sourcefeature, i.e. one of the entries returned by /top.",
-        "features" : "a list of features located on the source features, whose sequences you wish to retrieve"
-    }
-    
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def mrnaresidues(self, genenames):
-        """
-            Returns a mRNA sequences for a list of genes.
-        """
-        
-        genenames = ropy.server.to_array(genenames)
-        #genenames = ropy.server.get_array_from_hash("genenames", kwargs)
-        results = self.queries.getMRNAs(genenames)
-        data = {
-            "response" : {
-                "name" : "genes/mrnaresidues",
-                "mrnas" : results
-            }
-        }
-        return data
-        #return self.api.getMRNAs(genenames)
-    mrnaresidues.arguments = {
-        "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
-    }
-    
-    
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def polypeptideresidues(self, genenames):
-        """
-            Returns a polypeptide sequences for a list of genes.
-        """
-        genenames = ropy.server.to_array(genenames)
-        #genenames = ropy.server.get_array_from_hash("genenames", kwargs)
-        results = self.queries.getPEPs(genenames)
-        data = {
-            "response" : {
-                "name" : "genes/polypeptideresidues",
-                "polypeptides" : results
-            }
-        }
-        return data
-#        return self.api.getPEPs(genenames)
-    polypeptideresidues.arguments = {
-        "genenames" : "a list of genenames, for instance as supplied by the /genes endpoint"
-    }
-    
-    
-    @cherrypy.expose
-    @ropy.server.service_format()
     def length(self, uniquename):
         """
             Returns the length of a feature.
@@ -309,6 +342,7 @@ class Genes(BaseController):
         data = {
             "response" : {
                 "name" :"genes/length",
+                "uniquename" : uniquename,
                 "length" : results
             }
         }
@@ -316,20 +350,75 @@ class Genes(BaseController):
         #return self.api.getFeatureLength(uniquename)
     length.arguments = { "uniquename" : "the uniquename of the feature" }
     
+    
     @cherrypy.expose
     @ropy.server.service_format()
-    def featurecvterm(self, features, cvs = []):
+    def orthologues(self, features, **kwargs):
+        """
+           Returns orthologues for a list of features.
+        """
+        
+        features = ropy.server.to_array(features)
+        results = self.queries.getOrthologues(features)
+        
+        orthologues = []
+        ortho_store = {}
+        for result in results:
+            feature = result["feature"]
+            #delete result["feature"]
+            if feature not in ortho_store:
+                ortho_store[feature] = {
+                    "feature" : feature,
+                    "orthologues" : []
+                }
+                orthologues.append(ortho_store[feature])
+            ortho_store[feature]["orthologues"].append(result)
+        
+        ortho_store = None
+        
+        data = {
+            "response" : {
+                "name" : "genes/orthologues",
+                "features" : orthologues
+            }
+        }
+        return data
+    orthologues.arguments = {
+        "features" : "the features"
+    }
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def featurecoordinates(self, region, features):
+        results = self.queries.getFeatureCoordinates(region, features)
+        
+        data = {
+            "response" : {
+                "name" :"genes/featurecoordinates",
+                "coordinates" : results
+            }
+        }
+        return data
+    featurecoordinates.arguments = {
+        "region" : "the region upon which the features are located", 
+        "features": "the features" 
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def terms(self, features, controlled_vocabularies = []):
         """
             Returns cvterms of type cv_names associated with list of features.
         """
         
         features = ropy.server.to_array(features)
-        cvs = ropy.server.to_array(cvs)
+        controlled_vocabularies = ropy.server.to_array(controlled_vocabularies)
         
         logger.debug(features)
-        logger.debug(cvs)
+        logger.debug(controlled_vocabularies)
         
-        results = self.queries.getFeatureCVTerm(features, cvs)
+        results = self.queries.getFeatureCVTerm(features, controlled_vocabularies)
         
         to_return = []
         feature_store = {}
@@ -377,100 +466,33 @@ class Genes(BaseController):
             }
         }
         return data
-    featurecvterm.arguments = { 
+    terms.arguments = { 
         "features" : "the uniquenames of the features", 
-        "cvs": "the names of the cvs" 
+        "controlled_vocabularies": "the names of the controlled vocabularies" 
     }
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def orthologues(self, features, **kwargs):
+    def featureresiduesonsourcefeature(self, sourcefeature, features):
         """
-           Returns orthologues for a list of features.
+            Returns the sequences of features mapped onto a source feature.
         """
-        
+        #features = ropy.server.get_array_from_hash("features", kwargs, True)
         features = ropy.server.to_array(features)
-        results = self.queries.getOrthologues(features)
-        
-        orthologues = []
-        ortho_store = {}
-        for result in results:
-            feature = result["feature"]
-            #delete result["feature"]
-            if feature not in ortho_store:
-                ortho_store[feature] = {
-                    "feature" : feature,
-                    "orthologues" : []
-                }
-                orthologues.append(ortho_store[feature])
-            ortho_store[feature]["orthologues"].append(result)
-        
-        ortho_store = None
-        
+        logger.debug(features)
+        #return self.api.getFeatureResiduesFromSourceFeature(sourcefeature, features)
+        results = self.queries.getFeatureResiduesFromSourceFeature(sourcefeature, features)
         data = {
             "response" : {
-                "name" : "genes/orthologues",
-                "features" : orthologues
+                "name" : "genes/residues",
+                "residues" : results
             }
         }
         return data
-    orthologues.arguments = {
-        "features" : "the features"
+    featureresiduesonsourcefeature.arguments = {
+        "sourcefeature" : "the uniquename of a sourcefeature, i.e. one of the entries returned by /top.",
+        "features" : "a list of features located on the source features, whose sequences you wish to retrieve"
     }
-    
-    
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def featurecoordinates(self, sourcefeature, features):
-        results = self.queries.getFeatureCoordinates(sourcefeature, features)
-        
-        data = {
-            "response" : {
-                "name" :"genes/featurecoordinates",
-                "coordinates" : results
-            }
-        }
-        return data
-    featurecoordinates.arguments = {
-        "sourcefeature" : "the sourcefeature upon which the features are located", 
-        "features": "the features" 
-    }
-    
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def exoncoordinates(self, sourcefeature, genes):
-        """
-           Returns the exons coordinates for a list of genes.
-        """
-        results = self.queries.getExonCoordinates(sourcefeature, genes)
-        data = {
-            "response" : {
-                "name" :"genes/exoncoordinates",
-                "coordinates" : results
-            }
-        }
-        return data
-    featurecoordinates.arguments = {
-        "sourcefeature" : "the sourcefeature upon which the genes are located", 
-        "features": "the gene features" 
-    }
-    
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def annotationchangecvterms(self):
-        """
-           Returns the members of the controlled vocabulary used to type biologically meaningful annotation changes.
-        """
-        data = {
-            "response" : {
-                "name" :"genes/annotationchangecvterms",
-                "coordinates" : self.queries.getAnnotationChangeCvterms()
-            }
-        }
-        return data
-    annotationchangecvterms.arguments = {}
-
-
 
 
 class SourceFeatures(BaseController):
@@ -676,6 +698,30 @@ class Organisms(BaseController):
     """
         Organism related queries.
     """
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def top(self, taxonID):
+        """
+            Returns a list of top level features for an organism.
+        """
+        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        results = self.queries.getTopLevel(organism_id)
+        
+        data = {
+           "response" : {
+               "name" : "genes/top",
+               "taxonId" : taxonID,
+               "features" : results
+           }
+        }
+        #data = self.api.getTopLevel(taxonID)
+        return data
+    
+    top.arguments = {
+        "taxonID" : "the taxonID of the organism you want to browse"
+    }
     
     
     @cherrypy.expose

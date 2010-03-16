@@ -159,6 +159,11 @@ class Queries(QueryProcessor):
     def getPEPs(self, gene_unique_names):
         return self.runQueryAndMakeDictionary("get_cds_pep_residues", { "genenames": tuple(gene_unique_names) } )
     
+    def getGeneSequence(self, sourcefeature, genes):
+        if len(genes) == 0:
+            return self.runQueryAndMakeDictionary("get_gene_sequence_all", { 'sourcefeature': sourcefeature})
+        return self.runQueryAndMakeDictionary("get_gene_sequence", { 'sourcefeature': sourcefeature, "genes" : tuple(genes)})
+    
     def getFeatureResiduesFromSourceFeature(self, sourcefeature, features):
         return self.runQueryAndMakeDictionary("get_feature_sequence", { 'sourcefeature': sourcefeature, 'features' : tuple(features)})
     
@@ -170,12 +175,17 @@ class Queries(QueryProcessor):
     
     def getOrganismProp(self, organism_ids, cvterm_name, cv_name):
         return self.runQueryAndMakeDictionary("get_organism_prop", { "organism_ids" : tuple(organism_ids), "cvterm_name" : cvterm_name, "cv_name" : cv_name  } )
-        
+    
+    def getGenes(self, sourcefeature):
+        return self.runQueryAndMakeDictionary("get_genes", {"sourcefeature" : sourcefeature } )
+    
     def getFeatureCoordinates(self, sourcefeature, features):
         return self.runQueryAndMakeDictionary("get_feature_coordinates", {"sourcefeature" : sourcefeature, "features" : tuple(features) } )
     
-    def getExonCoordinates(self, sourcefeature, genes):
-        return self.runQueryAndMakeDictionary("get_exon_coordinates", {"sourcefeature":sourcefeature, "genenames":tuple(genes)} )
+    def getExons(self, sourcefeature, genes):
+        if len(genes) == 0:
+            return self.runQueryAndMakeDictionary("get_exons_all", { "sourcefeature" : sourcefeature })
+        return self.runQueryAndMakeDictionary("get_exons", {"sourcefeature" : sourcefeature, "genenames" : tuple(genes) })
     
     def getFeatureCVTerm(self, features, cvs):
         if cvs == None or len(cvs) == 0:

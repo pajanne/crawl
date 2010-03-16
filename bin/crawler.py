@@ -9,16 +9,9 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 
 import sys
 import inspect
-from util.password import get_password
-
-try:
-    import simplejson as json
-except ImportError:
-    import json #@UnusedImport
-
 import ropy.query
 import ropy.server
-
+import util.password
 import crawl.api.db
 import crawl.api.controllers
 
@@ -26,7 +19,7 @@ import logging
 logger = logging.getLogger("crawl")
 
 BASIC_USAGE = """
-Usage:  python crawler.py -set [set_name] -query [query_name] [options] -database host:5432/database?user
+Usage:  python crawler.py -query path/function [options] -database host:5432/database?user
 """
 
 DEFAULT_URL = "localhost:5432/pathogens?pathdb"
@@ -47,29 +40,33 @@ def get_args():
     return args
 
 
+def method_usage(method):
+    usage = ""
+    for arg_key, arg_doc in method.arguments.items():
+        usage += "-" + arg_key
+        usage += "\t" + arg_doc
+    return usage
+
 def call_method(api, method_name, args):
     
     if hasattr(api, method_name):
         method= getattr(api, method_name)
         if inspect.ismethod(method):
-            
             try:
                 return method(**args)
             except ropy.server.ServerException, se: #@UnusedVariable
-                print se.value
-                
-                for arg_key, arg_doc in method.arguments.items():
-                    print BASIC_USAGE
-                    print "-" + arg_key
-                    print "\t" + arg_doc
-                
-                # make sure the script status code is not 0
-                sys.exit(se.code+1)
-            
+                if se.info == None:
+                    se.info = method_usage(method)
+                else:
+                    se.info += method_usage(method)
+                raise se
+            except Exception,e:
+                logger.error(e)
+                raise ropy.server.ServerException(str(e), ropy.server.ERROR_CODES["MISC_ERROR"], method_usage())
         else:
-            raise Exception("%s is not a method of the API." % method_name)
+            raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
     else:
-        raise Exception("%s is not an attribute of the API." % method_name)
+        raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
     
 
 def get_classes():
@@ -82,10 +79,10 @@ def get_classes():
     return attrs
 
 def print_classes():
-    print "Available sets are:\n"
+    s = "Available sets are:\n"
     for the_class in get_classes():
-        print "\t" + the_class.__name__.lower()
-
+        s+= "\n\t" + the_class.__name__.lower()
+    return s
 def get_methods(obj):
     methods = []
     for member_info in inspect.getmembers(obj):
@@ -96,11 +93,12 @@ def get_methods(obj):
     return methods
 
 def print_methods(obj):
-    print "Available %s queries are: \n" % obj.__class__.__name__.lower()
+    s="" "Available %s queries are: \n" % obj.__class__.__name__.lower()
     for member_info in get_methods(obj):
         member_name = member_info[0]
         member = member_info[1] #@UnusedVariable
-        print "\t" + member_name
+        s+= "\n\t" + member_name
+    return s
 
 def get_api(path):
     api = None
@@ -110,23 +108,17 @@ def get_api(path):
             break
 
     if api == None:
-        print "Could not find a path of %s.\n" % path
-        print_classes()
-        sys.exit(BASIC_USAGE)
+        raise ropy.server.ServerException("Could not find a path of %s.\n" % path,  ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
 
     if not isinstance(api, crawl.api.controllers.BaseController):
-        print "The class must be a BaseController instance.\n"
-        print_classes()
-        sys.exit(BASIC_USAGE)
+        raise ropy.server.ServerException("The path %s must specify a class that inherits from BaseController.\n" % path,  ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
     return api
 
-def execute(path, function, args, database_uri):
+def execute(path, function, args, database_uri, password):
     #"localhost:port/database?user"
     
     ((host, port), (database, user)) = [database_uri.split("/")[0].split(":"), database_uri.split("/")[1].split("?")]
     logger.debug ("host %s port %s database %s user %s" % (host, port, database, user))
-    
-    password = get_password("password")
     
     api = get_api(path)
     connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
@@ -139,32 +131,41 @@ def execute(path, function, args, database_uri):
 
 def main():
     
-    args = get_args()
+    try:
+        
+        password = util.password.get_password("password")
+        
+        args = get_args()
     
-    if "database" not in args: 
-        database = DEFAULT_URL
-    else:
-        database = args["database"]
-        del args["database"]
+        if "database" not in args: 
+            database = DEFAULT_URL
+        else:
+            database = args["database"]
+            del args["database"]
+        
+        if "query" not in args:
+            raise ropy.server.ServerException("Please provide a -query argument, e.g. '-query genes/list'.", ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
+        else:
+            query = args["query"]
+            del args["query"]
+        
+        if "/" not in query:
+            api = get_api(query)
+            raise ropy.server.ServerException("Please provide 2 parts to the -query argument, the path and the function, separated by a '/', e.g. '-query genes/list'.", ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
             
-    if "set" not in args:
-        print "Please provide a -set argument."
-        print_classes()
-        sys.exit(BASIC_USAGE)
-    else:
-        set = args["set"]
-        del args["set"]
+        (path, function) = query.split("/", 2)
     
-    if "query" not in args:
-        print "Please provide a -query argument."
-        api = get_api(set)
-        print_methods(api)
-        sys.exit(BASIC_USAGE)
-    else:
-        query = args["query"]
-        del args["query"]
-    
-    print execute(set, query, args, database)
+        print execute(path, function, args, database, password)
+    except ropy.server.ServerException, e:
+        print e.value
+        print BASIC_USAGE
+        if e.info != None: print e.info
+        sys.exit(e.code + 1)
+    except Exception, e:
+        print str(e)
+        print BASIC_USAGE
+        sys.exit(e.code + 1)
+        
     
 
 if __name__ == '__main__':
