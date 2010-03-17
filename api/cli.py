@@ -162,7 +162,7 @@ def main(database = None):
     
     try:
         
-        password = util.password.get_password("password")
+        password = util.password.get_password("CRAWL_PASSWORD")
         
         args = get_args()
         
