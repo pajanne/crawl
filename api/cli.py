@@ -45,7 +45,7 @@ def get_args():
 def method_usage(method):
     usage = "Available query options are:\n"
     for arg_key, arg_doc in method.arguments.items():
-        usage += "-" + arg_key
+        usage += "\n-" + arg_key
         usage += "\t" + arg_doc
     return usage
 
