@@ -390,10 +390,10 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featurecoordinates(self, region, features):
+    def featurecoordinates(self, features, region = None):
         
         features = ropy.server.to_array(features)
-        results = self.queries.getFeatureCoordinates(region, features)
+        results = self.queries.getFeatureCoordinates(features, region)
         
         data = {
             "response" : {
@@ -403,8 +403,8 @@ class Features(BaseController):
         }
         return data
     featurecoordinates.arguments = {
-        "region" : "the region upon which the features are located", 
-        "features": "the features" 
+        "features": "the features" ,
+        "region" : "the region upon which the features are located (optional, if not supplied it should fetch all locations)" 
     }
     
     @cherrypy.expose

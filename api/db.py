@@ -179,7 +179,9 @@ class Queries(QueryProcessor):
     def getGenes(self, sourcefeature):
         return self.runQueryAndMakeDictionary("get_genes", {"sourcefeature" : sourcefeature } )
     
-    def getFeatureCoordinates(self, sourcefeature, features):
+    def getFeatureCoordinates(self, features, sourcefeature = None):
+        if sourcefeature ==  None:
+            return self.runQueryAndMakeDictionary("get_feature_coordinates_on_all_sourcefeatuess", { "features" : tuple(features) } )
         return self.runQueryAndMakeDictionary("get_feature_coordinates", {"sourcefeature" : sourcefeature, "features" : tuple(features) } )
     
     def getExons(self, sourcefeature, genes):
