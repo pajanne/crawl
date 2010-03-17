@@ -84,7 +84,7 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def residues(self, region, genes = []):
+    def sequence(self, region, genes = []):
         """
             Returns a list of genes located on a particular region (e.g. a contig), with their sequences extracted from that region.
         """
@@ -97,16 +97,15 @@ class Genes(BaseController):
             }
         }
         return data
-    residues.arguments = {
+    sequence.arguments = {
         "region" : "the name of a region, i.e. one of the entries returned by /top.",
         "genes" : "a list of genes, for instance as supplied by the /inregion or /inorganism queries."
     }
     
     
-    
     @cherrypy.expose
     @ropy.server.service_format()
-    def mrnaresidues(self, genes):
+    def mrnasequence(self, genes):
         """
             Returns a mRNA sequences for a list of genes.
         """
@@ -119,15 +118,14 @@ class Genes(BaseController):
             }
         }
         return data
-        #return self.api.getMRNAs(genenames)
-    mrnaresidues.arguments = {
+    mrnasequence.arguments = {
         "genes" : "a list of genes"
     }
     
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def polypeptideresidues(self, genes):
+    def polypeptidesequence(self, genes):
         """
             Returns a polypeptide sequences for a list of genes.
         """
@@ -141,8 +139,7 @@ class Genes(BaseController):
             }
         }
         return data
-#        return self.api.getPEPs(genenames)
-    polypeptideresidues.arguments = {
+    polypeptidesequence.arguments = {
         "genes" : "a list of genes"
     }
     
@@ -338,7 +335,18 @@ class Features(BaseController):
         """
             Returns the length of a feature.
         """
+        
         results = self.queries.getFeatureLength(uniquename)
+        
+        if results == 0:
+            coordinates = self.queries.getFeatureCoordinates([uniquename], None)
+            if len(coordinates) > 0:
+                for coordinate in coordinates:
+                    length = int(coordinate["fmax"]) - int(coordinate["fmin"])
+                    coordinate["length"] = str(length)
+                results = coordinates
+            
+        
         data = {
             "response" : {
                 "name" :"genes/length",

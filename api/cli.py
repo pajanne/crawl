@@ -20,10 +20,11 @@ import logging
 logger = logging.getLogger("crawl")
 
 BASIC_USAGE = """
-Usage:  python crawler.py -query path/function [options] -database host:5432/database?user
+Usage:  python crawler.py -query path/function [-database host:5432/database?user] [-always_return_json=true|false] [options]
 """
 
 DEFAULT_URL = "localhost:5432/pathogens?pathdb"
+
 
 def get_args():
     args = {}
@@ -42,11 +43,12 @@ def get_args():
 
 
 def method_usage(method):
-    usage = ""
+    usage = "Available query options are:\n"
     for arg_key, arg_doc in method.arguments.items():
         usage += "-" + arg_key
         usage += "\t" + arg_doc
     return usage
+
 
 def call_method(api, method_name, args):
     
@@ -63,12 +65,12 @@ def call_method(api, method_name, args):
                 raise se
             except Exception,e:
                 logger.error(e)
-                raise ropy.server.ServerException(str(e), ropy.server.ERROR_CODES["MISC_ERROR"], method_usage())
+                raise ropy.server.ServerException(str(e), ropy.server.ERROR_CODES["MISC_ERROR"], method_usage(method))
         else:
             raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
     else:
         raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
-    
+
 
 def get_classes():
     attrs = []
@@ -79,11 +81,14 @@ def get_classes():
             attrs.append(attr)
     return attrs
 
+
 def print_classes():
-    s = "Available sets are:\n"
+    s = "Available query sets are:\n"
     for the_class in get_classes():
         s+= "\n\t" + the_class.__name__.lower()
     return s
+
+
 def get_methods(obj):
     methods = []
     for member_info in inspect.getmembers(obj):
@@ -93,13 +98,15 @@ def get_methods(obj):
             methods.append(member_info)
     return methods
 
+
 def print_methods(obj):
-    s="" "Available %s queries are: \n" % obj.__class__.__name__.lower()
+    s= "Available %s queries are: \n" % obj.__class__.__name__.lower()
     for member_info in get_methods(obj):
         member_name = member_info[0]
         member = member_info[1] #@UnusedVariable
         s+= "\n\t" + member_name
     return s
+
 
 def get_api(path):
     api = None
@@ -114,6 +121,7 @@ def get_api(path):
     if not isinstance(api, controllers.BaseController):
         raise ropy.server.ServerException("The path %s must specify a class that inherits from BaseController.\n" % path,  ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
     return api
+
 
 def parse_database_uri(uri):
     
@@ -138,7 +146,7 @@ def parse_database_uri(uri):
         raise ropy.server.ServerException("Must provide a user name in '%s'. Please provide a database uri in the form of 'localhost:5432/database?user'." % uri,  ropy.server.ERROR_CODES["MISC_ERROR"])
     
     return (host, port, database, user)
-    
+
 
 def execute(path, function, args, database_uri, password):
     
@@ -156,9 +164,19 @@ def execute(path, function, args, database_uri, password):
     api.queries.conn.close()
     
     return ropy.server.Formatter(result).formatJSON()
-    
+
+
+def fail_with_json(code):
+    error_data = ropy.server.generate_error_data()
+    handler = ropy.server.ErrorController()
+    formatted = handler.format(error_data, "json", "error")
+    print formatted
+    sys.exit(code)
+
 
 def main(database = None):
+    
+    always_return_json = "false"
     
     try:
         
@@ -172,6 +190,11 @@ def main(database = None):
             else:
                 database = args["database"]
                 del args["database"]
+        
+        if "always_return_json" in args:
+            if args["always_return_json"] == "true" or args["always_return_json"] == "false":
+                always_return_json = args["always_return_json"]
+                del args["always_return_json"]
         
         if "query" not in args:
             raise ropy.server.ServerException("Please provide a -query argument, e.g. '-query genes/list'.", ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
@@ -187,16 +210,28 @@ def main(database = None):
     
         print execute(path, function, args, database, password)
     except ropy.server.ServerException, e:
+        
+        if always_return_json == "true":
+            fail_with_json(e.code + 1)
+        
+        print "Error:"
         print e.value
         print BASIC_USAGE
+        
         if e.info != None: print e.info
         sys.exit(e.code + 1)
-    except Exception, e:
-        print str(e)
-        #import traceback   
-        #traceback.print_exc()
-        sys.exit(BASIC_USAGE)
         
+    except Exception, e:
+        
+        if always_return_json == "true":
+            fail_with_json(1)
+        
+        print "Error:"
+        print str(e)
+        # import traceback   
+        # traceback.print_exc()
+        sys.exit(BASIC_USAGE)
+
 
 if __name__ == '__main__':
     main()
