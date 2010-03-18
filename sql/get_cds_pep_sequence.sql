@@ -1,4 +1,4 @@
-SELECT gene.uniqueName AS gene, pep.uniqueName AS polypeptide, pep.residues
+SELECT gene.uniqueName AS gene, pep.uniqueName AS polypeptide, pep.residues as sequence
 FROM feature gene
 
 -- we do right joins here because we don't want empty gene fields in the output

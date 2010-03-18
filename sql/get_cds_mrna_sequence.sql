@@ -1,4 +1,4 @@
-SELECT gene.uniquename AS gene, mrna.uniquename AS mrna, mrna.residues 
+SELECT gene.uniquename AS gene, mrna.uniquename AS mrna, mrna.residues as sequence
 FROM feature gene
 
 -- we do right joins here because we don't want empty gene fields in the output
