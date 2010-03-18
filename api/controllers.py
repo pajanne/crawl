@@ -698,7 +698,7 @@ class Regions(BaseController):
            "response" : {
                "name" : "regions/inorganism",
                "taxonId" : taxonID,
-               "features" : results
+               "regions" : results
            }
         }
         #data = self.api.getTopLevel(taxonID)
