@@ -687,7 +687,7 @@ class Regions(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def top(self, taxonID):
+    def inorganism(self, taxonID):
         """
             Returns a list of top level regions for an organism (e.g. chromosomes, contigs etc.).
         """
@@ -696,7 +696,7 @@ class Regions(BaseController):
         
         data = {
            "response" : {
-               "name" : "regions/top",
+               "name" : "regions/inorganism",
                "taxonId" : taxonID,
                "features" : results
            }
