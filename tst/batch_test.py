@@ -28,7 +28,7 @@ class BatchTest ( threading.Thread ):
         }
         
         # try :
-        data = client.request("sourcefeatures/featureloc.json", parameters)
+        data = client.request("regions/featureloc.json", parameters)
         
         # print data.toprettyxml()
         response = data['response']

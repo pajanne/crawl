@@ -18,7 +18,7 @@ import optparse
 
 
 from crawl.api.db import Queries
-from crawl.api.controllers import Genes
+from crawl.api.controllers import Genes, Features
 
 import ropy.query
 from ropy.client import RopyClient, ServerReportedException
@@ -76,12 +76,12 @@ class BoundaryTest(unittest.TestCase):
         self.assertNotEqual(translation_tables[0]["value"], translation_tables[1]["value"])
     
     def testGetFeatureCoordinates(self):
-        coords = self.queries.getFeatureCoordinates("Pf3D7_01", ["PFA0170c", "PFA0170c:mRNA", "PFA0170c:exon:1", "PFA0170c:pep", "PFA0315w", "PFA0315w:mRNA", "PFA0315w:exon:1", "PFA0315w:exon:2", "PFA0315w:exon:3", "PFA0315w:exon:4"])
+        coords = self.queries.getFeatureCoordinates( ["PFA0170c", "PFA0170c:mRNA", "PFA0170c:exon:1", "PFA0170c:pep", "PFA0315w", "PFA0315w:mRNA", "PFA0315w:exon:1", "PFA0315w:exon:2", "PFA0315w:exon:3", "PFA0315w:exon:4"], "Pf3D7_01" )
         print Formatter(coords).formatJSON()
         
     
     def testGetExonCoordinates(self):
-        coords = self.queries.getExonCoordinates("Pf3D7_01", ["PFA0170c", "PFA0315w"])
+        coords = self.queries.getExons( "Pf3D7_01", ["PFA0170c", "PFA0315w"] )
         print Formatter(coords).formatJSON()
 
 class FeatureLengthTest(unittest.TestCase):
@@ -118,15 +118,15 @@ class GeneTests(unittest.TestCase):
 class APITests(unittest.TestCase):
     
     def setUp(self):
-        self.api = Genes()
+        self.api = Features()
         self.api.queries = Queries(connectionFactory)
     
     def test1(self):
-        cvterms = self.api.featurecvterm(features=["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep", "SAR1447:pep"], cvs=["biological_process", "molecular_function"])
+        cvterms = self.api.terms(features=["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep", "SAR1447:pep"], controlled_vocabularies=["biological_process", "molecular_function"])
         print Formatter(cvterms).formatJSON()
     
     def test2(self):
-        cvterms = self.api.featurecvterm(features=["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep", "SAR1447:pep"])
+        cvterms = self.api.terms(features=["PF11_0260:1:pep", "PFC0035w:pep", "PFC0050c:pep", "PFC0120w:pep", "SAR1447:pep"])
         print Formatter(cvterms).formatJSON()
 
 class BusinessTests(unittest.TestCase):
@@ -134,7 +134,7 @@ class BusinessTests(unittest.TestCase):
     def setUp(self):
         self.queries = Queries(connectionFactory)
     
-    def testGetSourceFeatureSequence(self):
+    def testGetRegionSequence(self):
         data = self.queries.getFeatureLocs(1, 1, 100000, [42, 69])
         print Formatter(data).formatJSON()
         
@@ -231,8 +231,8 @@ class BusinessTests2(unittest.TestCase):
         print result
     
     
-    def testGetSourceFeatureSequence(self):
-        rows = self.queries.getSourceFeatureSequence("Pf3D7_01")
+    def testGetRegionSequence(self):
+        rows = self.queries.getRegionSequence("Pf3D7_01")
         row = rows[0]
         
         length = row["length"]
@@ -244,7 +244,7 @@ class BusinessTests2(unittest.TestCase):
         
         data = {
             "response" : {
-                "name" : "source_feature/sequence",
+                "name" : "region/sequence",
                 "sequence" :  {
                     "start" : start,
                     "end" : end,

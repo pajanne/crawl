@@ -30,11 +30,11 @@
                 
                 // add tests here, as needed...
                 
-                makeRequest(1, "/genes/featureproperties.json", {
+                makeRequest(1, "/features/featureproperties.json", {
                         "uniqueNames": ["PFA0290w:exon:2", "PFA0300c:exon:1"]
                 }, false);
                 
-                makeRequest(2, "/sourcefeatures/featureloc.json", {
+                makeRequest(2, "/regions/featureloc.json", {
                     "uniqueName" : "Pf3D7_01",
                     "start" : 450001,
                     "end" : 460001,
@@ -42,28 +42,28 @@
                 }, false);
                 
                 
-                makeRequest(3, "/sourcefeatures/featureloc.json", {
+                makeRequest(3, "/regions/featureloc.json", {
                     "uniqueName" : "Pf3D7_01",
                     "start" : 450001,
                     "end" : 46000000,
                     "relationships" : ['part_of','derives_from']
                 }, false);
                 
-                makeRequest(4, "/sourcefeatures/featureloc.json", {
+                makeRequest(4, "/regions/featureloc.json", {
                     "uniqueName" : "Pf3D7_01",
                     "start" : 450001,
                     "end" : 46000000,
                     "relationships" : ['y','x']
                 }, true);
                 
-                makeRequest(5, "/genes/residues.json", {
-                    "sourcefeature" : "Pf3D7_01",
-                    "features" : "RNAzID:13:ncRNA"
+                makeRequest(5, "/genes/sequence.json", {
+                    "region" : "Pf3D7_01",
+                    "genes" : "PFA0385w"
                 }, false)
                 
-                makeRequest(6, "/genes/residues.json", {
-                    "sourcefeature" : "Pf3D7_01",
-                    "features" : ["RNAzID:13:ncRNA"]
+                makeRequest(6, "/genes/sequence.json", {
+                    "region" : "Pf3D7_01",
+                    "genes" : ["PFA0385w"]
                 }, false)
                 
                 

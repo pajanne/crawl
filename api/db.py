@@ -96,8 +96,8 @@ class Queries(QueryProcessor):
         return self.runQueryAndMakeDictionary("get_all_organisms_and_taxon_ids")
     
     
-    def getSourceFeatureSequence(self, uniqueName):
-        rows = self.runQueryAndMakeDictionary("source_feature_sequence", (uniqueName, ))
+    def getRegionSequence(self, uniqueName):
+        rows = self.runQueryAndMakeDictionary("region_sequence", (uniqueName, ))
         return rows
     
     def getCvtermID(self, cvname, cvtermnames ):
@@ -108,9 +108,9 @@ class Queries(QueryProcessor):
             results.append(r[0])
         return results
     
-    def getFeatureLocs(self, source_feature_id, start, end, relationships):
+    def getFeatureLocs(self, region_id, start, end, relationships):
         args = {
-            "sourcefeatureid": source_feature_id,
+            "regionid": region_id,
             "start":start,
             "end":end,
             "relationships":tuple(relationships), # must convert arrays to tuples
@@ -154,18 +154,18 @@ class Queries(QueryProcessor):
         return self.runQueryAndMakeDictionary("get_all_cds_features_for_organism", (organism_id, ))
     
     def getMRNAs(self, gene_unique_names):
-        return self.runQueryAndMakeDictionary("get_cds_mrna_residues", { "genenames": tuple(gene_unique_names) } )
+        return self.runQueryAndMakeDictionary("get_cds_mrna_sequence", { "genenames": tuple(gene_unique_names) } )
     
     def getPEPs(self, gene_unique_names):
-        return self.runQueryAndMakeDictionary("get_cds_pep_residues", { "genenames": tuple(gene_unique_names) } )
+        return self.runQueryAndMakeDictionary("get_cds_pep_sequence", { "genenames": tuple(gene_unique_names) } )
     
-    def getGeneSequence(self, sourcefeature, genes):
+    def getGeneSequence(self, region, genes):
         if len(genes) == 0:
-            return self.runQueryAndMakeDictionary("get_gene_sequence_all", { 'sourcefeature': sourcefeature})
-        return self.runQueryAndMakeDictionary("get_gene_sequence", { 'sourcefeature': sourcefeature, "genes" : tuple(genes)})
+            return self.runQueryAndMakeDictionary("get_gene_sequence_all", { 'region': region})
+        return self.runQueryAndMakeDictionary("get_gene_sequence", { 'region': region, "genes" : tuple(genes)})
     
-    def getFeatureResiduesFromSourceFeature(self, sourcefeature, features):
-        return self.runQueryAndMakeDictionary("get_feature_sequence", { 'sourcefeature': sourcefeature, 'features' : tuple(features)})
+    def getFeatureSequenceFromRegion(self, region, features):
+        return self.runQueryAndMakeDictionary("get_feature_sequence", { 'region': region, 'features' : tuple(features)})
     
     def getFeatureLength(self, uniquename):
         try:
@@ -176,18 +176,18 @@ class Queries(QueryProcessor):
     def getOrganismProp(self, organism_ids, cvterm_name, cv_name):
         return self.runQueryAndMakeDictionary("get_organism_prop", { "organism_ids" : tuple(organism_ids), "cvterm_name" : cvterm_name, "cv_name" : cv_name  } )
     
-    def getGenes(self, sourcefeature):
-        return self.runQueryAndMakeDictionary("get_genes", {"sourcefeature" : sourcefeature } )
+    def getGenes(self, region):
+        return self.runQueryAndMakeDictionary("get_genes", {"region" : region } )
     
-    def getFeatureCoordinates(self, features, sourcefeature = None):
-        if sourcefeature ==  None:
+    def getFeatureCoordinates(self, features, region = None):
+        if region ==  None:
             return self.runQueryAndMakeDictionary("get_feature_coordinates_on_all_sourcefeatuess", { "features" : tuple(features) } )
-        return self.runQueryAndMakeDictionary("get_feature_coordinates", {"sourcefeature" : sourcefeature, "features" : tuple(features) } )
+        return self.runQueryAndMakeDictionary("get_feature_coordinates", {"region" : region, "features" : tuple(features) } )
     
-    def getExons(self, sourcefeature, genes):
+    def getExons(self, region, genes):
         if len(genes) == 0:
-            return self.runQueryAndMakeDictionary("get_exons_all", { "sourcefeature" : sourcefeature })
-        return self.runQueryAndMakeDictionary("get_exons", {"sourcefeature" : sourcefeature, "genenames" : tuple(genes) })
+            return self.runQueryAndMakeDictionary("get_exons_all", { "region" : region })
+        return self.runQueryAndMakeDictionary("get_exons", {"region" : region, "genenames" : tuple(genes) })
     
     def getFeatureCVTerm(self, features, cvs):
         if cvs == None or len(cvs) == 0:

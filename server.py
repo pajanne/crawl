@@ -87,7 +87,7 @@ def main():
     root.genes = api.controllers.Genes()
     root.features = api.controllers.Features();
     root.organisms = api.controllers.Organisms()
-    root.sourcefeatures = api.controllers.SourceFeatures()
+    root.regions = api.controllers.Regions()
     
     if options.test == True:
         root.testing = api.controllers.Testing()

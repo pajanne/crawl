@@ -89,11 +89,11 @@ class Genes(BaseController):
             Returns a list of genes located on a particular region (e.g. a contig), with their sequences extracted from that region.
         """
         genes = ropy.server.to_array(genes)
-        residues = self.queries.getGeneSequence(region, genes)
+        sequence = self.queries.getGeneSequence(region, genes)
         data = {
             "response" : {
-                "name" : "genes/residues",
-                "residues" : residues
+                "name" : "genes/sequence",
+                "sequence" : sequence
             }
         }
         return data
@@ -113,7 +113,7 @@ class Genes(BaseController):
         results = self.queries.getMRNAs(genes)
         data = {
             "response" : {
-                "name" : "genes/mrnaresidues",
+                "name" : "genes/mrnasequence",
                 "mrnas" : results
             }
         }
@@ -134,7 +134,7 @@ class Genes(BaseController):
         results = self.queries.getPEPs(genes)
         data = {
             "response" : {
-                "name" : "genes/polypeptideresidues",
+                "name" : "genes/polypeptidesequence",
                 "polypeptides" : results
             }
         }
@@ -278,7 +278,7 @@ class Features(BaseController):
         """
         
         # build the uniqueNames array from different possilble kwargs
-        uniqueNames = ropy.server.to_array(uniqueNames) #ropy.server.get_array_from_hash("uniqueNames", kwargs)
+        uniqueNames = ropy.server.to_array(uniqueNames) 
         
         u = ropy.server.to_array(u)
         if len(u) > 0: uniqueNames.extend(u)
@@ -483,29 +483,27 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featureresiduesonsourcefeature(self, sourcefeature, features):
+    def featuresequenceonregion(self, region, features):
         """
-            Returns the sequences of features mapped onto a source feature.
+            Returns the sequences of features mapped onto a region.
         """
-        #features = ropy.server.get_array_from_hash("features", kwargs, True)
         features = ropy.server.to_array(features)
-        logger.debug(features)
-        #return self.api.getFeatureResiduesFromSourceFeature(sourcefeature, features)
-        results = self.queries.getFeatureResiduesFromSourceFeature(sourcefeature, features)
+        # logger.debug(features)
+        results = self.queries.getFeatureSequenceFromRegion(region, features)
         data = {
             "response" : {
-                "name" : "genes/residues",
-                "residues" : results
+                "name" : "genes/sequence",
+                "sequence" : results
             }
         }
         return data
-    featureresiduesonsourcefeature.arguments = {
-        "sourcefeature" : "the uniquename of a sourcefeature, i.e. one of the entries returned by /top.",
-        "features" : "a list of features located on the source features, whose sequences you wish to retrieve"
+    featuresequenceonregion.arguments = {
+        "region" : "the region upon which you want to get the features",
+        "features" : "a list of features whose sequences you wish to retrieve, located on the region"
     }
 
 
-class SourceFeatures(BaseController):
+class Regions(BaseController):
     """
         Source feature related queries.
     """
@@ -515,7 +513,7 @@ class SourceFeatures(BaseController):
         """
             Returns the sequence of a source feature.
         """
-        rows = self.queries.getSourceFeatureSequence(uniqueName)
+        rows = self.queries.getRegionSequence(uniqueName)
         row = rows[0]
 
         length = row["length"]
@@ -524,7 +522,7 @@ class SourceFeatures(BaseController):
 
         data = {
             "response" : {
-                "name" : "sourcefeatures/sequence",
+                "name" : "regions/sequence",
                 "sequence" :  [{
                     "uniqueName" : uniqueName,
                     "start" : start,
@@ -534,7 +532,6 @@ class SourceFeatures(BaseController):
                 }]
             }
         }
-        #data = self.api.getSoureFeatureSequence(uniqueName, start, end)
         return data
     
     sequence.arguments = { 
@@ -551,9 +548,7 @@ class SourceFeatures(BaseController):
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         
-        #relationships = ropy.server.get_array_from_hash("relationships", kwargs)
         relationships = ropy.server.to_array(relationships)
-        # logger.debug(relationships)
         
         if len(relationships) == 0: 
             relationships = ["part_of", "derives_from"]
@@ -562,7 +557,7 @@ class SourceFeatures(BaseController):
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
         
         
-        sourceFeatureID = self.queries.getFeatureID(uniqueName)
+        regionID = self.queries.getFeatureID(uniqueName)
         
         relationship_ids = []
         
@@ -593,7 +588,7 @@ class SourceFeatures(BaseController):
         # logger.debug(relationships)
         # logger.debug(relationship_ids)
         
-        rows = self.queries.getFeatureLocs(sourceFeatureID, start, end, relationship_ids)
+        rows = self.queries.getFeatureLocs(regionID, start, end, relationship_ids)
         
         # an to place the root level results
         featurelocs = []
@@ -672,7 +667,7 @@ class SourceFeatures(BaseController):
         
         data = {
             "response" : {
-                "name" : "sourcefeatures/featureloc", 
+                "name" : "regions/featureloc", 
                 "uniqueName" : uniqueName,
                 "features" : featurelocs
             }
@@ -694,14 +689,14 @@ class SourceFeatures(BaseController):
     @ropy.server.service_format()
     def top(self, taxonID):
         """
-            Returns a list of top level features for an organism.
+            Returns a list of top level regions for an organism (e.g. chromosomes, contigs etc.).
         """
         organism_id = self.queries.getOrganismFromTaxon(taxonID)
         results = self.queries.getTopLevel(organism_id)
         
         data = {
            "response" : {
-               "name" : "genes/top",
+               "name" : "regions/top",
                "taxonId" : taxonID,
                "features" : results
            }
