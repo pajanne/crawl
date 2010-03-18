@@ -704,7 +704,7 @@ class Regions(BaseController):
         #data = self.api.getTopLevel(taxonID)
         return data
     
-    top.arguments = {
+    inorganism.arguments = {
         "taxonID" : "the taxonID of the organism you want to browse"
     }
     
