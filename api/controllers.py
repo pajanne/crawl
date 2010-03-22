@@ -471,7 +471,7 @@ class Features(BaseController):
         
         data = {
             "response" : {
-                "name" :"genes/featurecvterms",
+                "name" :"features/terms",
                 "features" : to_return
             }
         }
@@ -480,6 +480,59 @@ class Features(BaseController):
         "features" : "the uniquenames of the features", 
         "controlled_vocabularies": "the names of the controlled vocabularies" 
     }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def withterm(self, term, controlled_vocabulary):
+        results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary)
+        
+        for result in results:
+            term_properties = result["term_properties"]
+            term_property_types = result["term_property_types"]
+            term_property_type_vocabularies = result["term_property_type_vocabularies"]
+            
+            del result["term_properties"]
+            del result["term_property_types"]
+            del result["term_property_type_vocabularies"]
+            
+            properties = []
+            
+            for i in range(len(term_properties)):
+                properties.append({
+                    "value" : term_properties[i],
+                    "type" : term_property_types[i],
+                    "cv" : term_property_type_vocabularies[i]
+                })
+             
+            result["properties"] = properties
+        
+        
+        data = {
+            "response" : {
+                "name" :"features/withterm",
+                "features" : results
+            }
+        }
+        return data
+    withterm.arguments = { "term" : "the controlled vocabulary term", "controlled_vocuabulary" : "the controlled vocabulary name" }
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def withproperty(self, type, value, regex = False):
+        logger.debug(regex)
+        regex = ropy.server.to_bool(regex)
+        logger.debug(regex)
+        results = self.queries.getFeatureWithProp(type, value, regex)
+        data = {
+            "response" : {
+                "name" :"features/withproperty",
+                "features" : results
+            }
+        }
+        return data
+    withproperty.arguments = { "type" : "the type of property", "value" : "the value of the property", "regex" : "whether or not to search the values by POSIX regex (default False)" }
+        
     
     @cherrypy.expose
     @ropy.server.service_format()
@@ -492,7 +545,7 @@ class Features(BaseController):
         results = self.queries.getFeatureSequenceFromRegion(region, features)
         data = {
             "response" : {
-                "name" : "genes/sequence",
+                "name" : "features/featuresequenceonregion",
                 "sequence" : results
             }
         }

@@ -194,6 +194,14 @@ class Queries(QueryProcessor):
             return self.runQueryAndMakeDictionary("get_feature_cvterms_all", {"features" : tuple(features) })
         return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cvs" : tuple(cvs) })
     
+    def getFeatureWithCVTerm(self, cvterm, cv):
+        return self.runQueryAndMakeDictionary("get_features_with_cvterm", {"cvterm" : cvterm, "cv" : cv })
+    
+    def getFeatureWithProp(self, type, value, regex):
+        if regex == False:
+            return self.runQueryAndMakeDictionary("get_features_with_prop", { "type" : type, "value" : value  })
+        return self.runQueryAndMakeDictionary("get_features_with_prop_regex", { "type" : type, "value" : value  })
+    
     def getFeatureCVTermPub(self, feature_cvterm_id):
         results = self.runQuery("get_feature_cvterm_pubs", {"feature_cvterm_id" : feature_cvterm_id })
         to_return = []
