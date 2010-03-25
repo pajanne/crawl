@@ -125,7 +125,7 @@ def get_api(path):
 
 def parse_database_uri(uri):
     
-    host = ""
+    host = "" #@UnusedVariable
     port = 0
     database = ""
     user = ""
