@@ -224,6 +224,12 @@ class Queries(QueryProcessor):
     def getOrthologues(self, features):
         return self.runQueryAndMakeDictionary("get_orthologue", {"features" : tuple(features)})
     
+    def getDomains(self, genes, relationships):
+        return self.runQueryAndMakeDictionary("get_domains", {
+            "genes" : tuple(genes), 
+            "relationships" : tuple(relationships) 
+        })
+    
     def validateDate(self, date):
         try:
             time.strptime(date,"%Y-%m-%d")

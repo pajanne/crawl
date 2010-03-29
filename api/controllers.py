@@ -38,6 +38,30 @@ class BaseController(ropy.server.RESTController):
         #self.api = api.API(cherrypy.thread_data.connectionFactory)
         super(BaseController, self).init_handler()
     
+    def _get_relationship_ids(self, relationships):
+        relationship_ids = []
+        
+        """
+            part_of is currently stored in a different CV term to the rest :
+            select count(type_id), cvterm.name, cv.name from feature_relationship join cvterm on feature_relationship.type_id = cvterm.cvterm_id join cv on cvterm.cv_id = cv.cv_id group by cvterm.name, cv.name;
+              count  |      name      |     name     
+            ---------+----------------+--------------
+              510619 | derives_from   | sequence
+              406534 | orthologous_to | sequence
+                 341 | paralogous_to  | sequence
+             1929818 | part_of        | relationship
+            
+            so we need to make sure that its cvterm_id is fetched from the right cv!
+        """
+        if "part_of" in relationships:
+            relationships.remove("part_of")
+            relationship_ids = self.queries.getCvtermID("sequence", relationships)
+            part_of_id = self.queries.getCvtermID("relationship", ["part_of"])[0]
+            relationship_ids.append(part_of_id)
+        else:
+            relationship_ids = self.queries.getCvtermID("sequence", relationships)
+        return relationship_ids
+    
 class Genes(BaseController):
     """
         Gene related queries.
@@ -221,6 +245,26 @@ class Genes(BaseController):
     annotation_changes.arguments = { 
         "since" : "date formatted as YYYY-MM-DD", 
         "taxonomyID" : "the NCBI taxonomy ID" 
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def domains(self, genes):
+        """
+           Returns domains associated with a particular gene.
+        """
+        genes = ropy.server.to_array(genes)
+        relationship_ids = self._get_relationship_ids(["derives_from", "part_of"])
+        results = self.queries.getDomains(genes, relationship_ids)
+        data = {
+            "response" : {
+                "name" : "genes/domains",
+                "results" : results
+            }
+        }
+        return data
+    domains.arguments = {
+        "genes" : "a list of gene names you want to search for domains"
     }
     
     def _getGenesWithHistoryChanges(self, organism_id, since):
@@ -612,28 +656,7 @@ class Regions(BaseController):
         
         regionID = self.queries.getFeatureID(uniqueName)
         
-        relationship_ids = []
-        
-        """
-            part_of is currently stored in a different CV term to the rest :
-            select count(type_id), cvterm.name, cv.name from feature_relationship join cvterm on feature_relationship.type_id = cvterm.cvterm_id join cv on cvterm.cv_id = cv.cv_id group by cvterm.name, cv.name;
-              count  |      name      |     name     
-            ---------+----------------+--------------
-              510619 | derives_from   | sequence
-              406534 | orthologous_to | sequence
-                 341 | paralogous_to  | sequence
-             1929818 | part_of        | relationship
-            
-            so we need to make sure that its cvterm_id is fetched from the right cv!
-        """
-        if "part_of" in relationships:
-            relationships.remove("part_of")
-            relationship_ids = self.queries.getCvtermID("sequence", relationships)
-            part_of_id = self.queries.getCvtermID("relationship", ["part_of"])[0]
-            relationship_ids.append(part_of_id)
-        else:
-            relationship_ids = self.queries.getCvtermID("sequence", relationships)
-        
+        relationship_ids = self._get_relationship_ids(relationships)
         
         if len(relationship_ids) == 0:
             raise ropy.server.ServerException("Could not find any cvterms " + str(relationships) + " in the relationship cv.", ropy.server.ERROR_CODES["DATA_NOT_FOUND"])
