@@ -11,7 +11,6 @@ or dictionaries.
 
 """
 
-
 import os
 import time
 import logging
@@ -227,6 +226,9 @@ class Queries(QueryProcessor):
     def getOrthologueClusters(self, orthologues):
         return self.runQueryAndMakeDictionary("get_orthologue_clusters", {"orthologues" : tuple(orthologues)})
     
+    def getOrthologuesInOrganism(self, organism_id):
+        return self.runQueryAndMakeDictionary("get_orthologues_inorganism", {"organism_id" : organism_id})
+        
     def getDomains(self, genes, relationships):
         return self.runQueryAndMakeDictionary("get_domains", {
             "genes" : tuple(genes), 

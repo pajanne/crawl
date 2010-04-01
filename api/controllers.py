@@ -462,6 +462,24 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
+    def orthologuesinorganism(self, taxonID):
+        """
+           Gets all the orthologues in an organism.
+        """
+        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        results = self.queries.getOrthologuesInOrganism(organism_id)
+        return ({
+            "response" : {
+                "name" : "features/orthologuesinorganism",
+                "orthologues" : results
+            }
+        })
+    orthologuesinorganism.arguments = {
+        "taxonID" : "the organism's taxonID"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
     def clusters(self, orthologues):
         """
            Returns a the orthologue clusters for a given set of orthologues. 
