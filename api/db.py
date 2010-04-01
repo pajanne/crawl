@@ -224,10 +224,19 @@ class Queries(QueryProcessor):
     def getOrthologues(self, features):
         return self.runQueryAndMakeDictionary("get_orthologue", {"features" : tuple(features)})
     
+    def getOrthologueClusters(self, orthologues):
+        return self.runQueryAndMakeDictionary("get_orthologue_clusters", {"orthologues" : tuple(orthologues)})
+    
     def getDomains(self, genes, relationships):
         return self.runQueryAndMakeDictionary("get_domains", {
             "genes" : tuple(genes), 
             "relationships" : tuple(relationships) 
+        })
+    
+    def getWithDomains(self, domains, relationships):
+        return self.runQueryAndMakeDictionary("get_with_domains", {
+            "domains" : tuple(domains),
+            "relationships" : tuple(relationships)
         })
     
     def validateDate(self, date):

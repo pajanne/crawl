@@ -251,7 +251,7 @@ class Genes(BaseController):
     @ropy.server.service_format()
     def domains(self, genes):
         """
-           Returns domains associated with a particular gene.
+           Returns domains associated with particular genes.
         """
         genes = ropy.server.to_array(genes)
         relationship_ids = self._get_relationship_ids(["derives_from", "part_of"])
@@ -266,6 +266,27 @@ class Genes(BaseController):
     domains.arguments = {
         "genes" : "a list of gene names you want to search for domains"
     }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def withdomains(self, domains):
+        """
+           Returns genes associated with particular domains.
+        """
+        domains = ropy.server.to_array(domains)
+        relationship_ids = self._get_relationship_ids(["derives_from", "part_of"])
+        results = self.queries.getWithDomains(domains, relationship_ids)
+        data = {
+            "response" : {
+                "name" : "genes/withdomains",
+                "results" : results
+            }
+        }
+        return data
+    domains.arguments = {
+        "domains" : "a list of domain names you want genes for"
+    }
+    
     
     def _getGenesWithHistoryChanges(self, organism_id, since):
 
@@ -405,7 +426,7 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def orthologues(self, features, **kwargs):
+    def orthologues(self, features):
         """
            Returns orthologues for a list of features.
         """
@@ -430,13 +451,45 @@ class Features(BaseController):
         
         data = {
             "response" : {
-                "name" : "genes/orthologues",
+                "name" : "features/orthologues",
                 "features" : orthologues
             }
         }
         return data
     orthologues.arguments = {
         "features" : "the features"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def clusters(self, orthologues):
+        """
+           Returns a the orthologue clusters for a given set of orthologues. 
+        """
+        orthologues = ropy.server.to_array(orthologues)
+        results = self.queries.getOrthologueClusters(orthologues)
+        
+        data = []
+        store = {}
+        for result in results:
+            cluster_name = result["cluster_name"]
+            del result["cluster_name"]
+            if cluster_name not in store:
+                store[cluster_name] = []
+                data.append({
+                    "cluster_name" : cluster_name,
+                    "cluster" : store[cluster_name]
+                })
+            store[cluster_name].append(result)
+        store = None
+        return ({
+            "response" : {
+                "name" : "features/clusters",
+                "clusters" : data
+            }
+        })
+    clusters.arguments = {
+        "orthologues" : "the orthologues"
     }
     
     
