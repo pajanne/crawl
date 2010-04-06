@@ -779,11 +779,12 @@ class Regions(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featureloc(self, uniqueName, start, end, relationships = []):
+    def featureloc(self, uniqueName, start, end, relationships = [], flattened=False):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         
+        flattened = ropy.server.to_bool(flattened)
         relationships = ropy.server.to_array(relationships)
         
         if len(relationships) == 0: 
@@ -791,7 +792,6 @@ class Regions(BaseController):
         
         logger.debug(relationships)
         logger.debug(uniqueName + " : " + str(start) + " - " + str(end))
-        
         
         regionID = self.queries.getFeatureID(uniqueName)
         
@@ -812,6 +812,8 @@ class Regions(BaseController):
         # been generated so far... 
         result_map = {}
         
+        logger.debug(flattened)
+        
         for r in rows:
             
             root = None
@@ -830,8 +832,12 @@ class Regions(BaseController):
                     "is_obsolete" : r["l1_is_obsolete"],
                     "feature_id" : r["l1_feature_id"],
                     "parent" : "",
-                    "features" : []
+                    #"features" : []
                 }
+                
+                if not flattened:
+                    root["features"] = []
+                
                 result_map[r['l1_uniquename']] = root
                 featurelocs.append(root)
             
@@ -852,9 +858,15 @@ class Regions(BaseController):
                         "is_obsolete" : r["l2_is_obsolete"],
                         "feature_id" : r["l2_feature_id"],
                         "parent" : root["uniquename"],
-                        "features" : []
+                        #"features" : []
                     }
-                    root["features"].append(l2)
+                    
+                    if not flattened:
+                        l2["features"] = []
+                        root["features"].append(l2)
+                    else:
+                        featurelocs.append(l2)
+                        
                     result_map[r['l2_uniquename']] = l2
             
             if r['l3_uniquename'] != "None": 
@@ -873,9 +885,15 @@ class Regions(BaseController):
                         "is_obsolete" : r["l2_is_obsolete"],
                         "feature_id" : r["l2_feature_id"],
                         "parent" : l2["uniquename"],
-                        "features" : []
+                        #"features" : []
                     }
-                    l2["features"].append(l3)
+                    
+                    if not flattened:
+                        l3["features"] = []
+                        l2["features"].append(l3)
+                    else:
+                        featurelocs.append(l3)
+
                     result_map[r['l3_uniquename']] = l3
         
         result_map = None
@@ -884,7 +902,7 @@ class Regions(BaseController):
             "response" : {
                 "name" : "regions/featureloc", 
                 "uniqueName" : uniqueName,
-                "features" : featurelocs
+                "features" : featurelocs,
             }
         }
         
@@ -895,7 +913,8 @@ class Regions(BaseController):
         "uniqueName" : "the uniqueName of the source feature" ,
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
         "end" : "the end position of the features locations that you wish to retrieve (counting from 1)",
-        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]"
+        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
+        "flattened" : "whether you want to the results returned in a nested tree (false) or as a flattened list (true), defaults to false (nested tree)."
     }
     
     
