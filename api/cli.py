@@ -154,7 +154,7 @@ def execute(path, function, args, database_uri, password):
     logger.debug ("host %s port %s database %s user %s" % (host, port, database, user))
     
     api = get_api(path)
-    connectionFactory = ropy.query.ConnectionFactory(host, database, user, password)
+    connectionFactory = ropy.query.ConnectionFactory(host, database, user, password, port)
     api.queries = db.Queries(connectionFactory)
     
     # make the call
