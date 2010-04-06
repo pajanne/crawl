@@ -305,7 +305,7 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.server.service_format("private_annotations")
     def annotation_changes(self, taxonomyID, since):
         """
             Reports all the genes that have been highlighted as having annotation changes.
