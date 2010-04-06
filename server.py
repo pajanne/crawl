@@ -88,6 +88,7 @@ def main():
     root.features = api.controllers.Features();
     root.organisms = api.controllers.Organisms()
     root.regions = api.controllers.Regions()
+    root.histories = api.controllers.Histories()
     
     if options.test == True:
         root.testing = api.controllers.Testing()

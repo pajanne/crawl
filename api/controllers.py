@@ -61,6 +61,96 @@ class BaseController(ropy.server.RESTController):
         else:
             relationship_ids = self.queries.getCvtermID("sequence", relationships)
         return relationship_ids
+
+    def _getGenesWithHistoryChanges(self, organism_id, since):
+
+        cvterm_infos = self._getHistoryCvtermPropTypeIDs()
+
+        qualifier_type_id = cvterm_infos[0]["id"]
+        curatorName_type_id = cvterm_infos[1]["id"]
+        date_type_id = cvterm_infos[2]["id"]
+
+        results = self.queries.getGenesWithHistoryChanges(organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id)
+
+        return results
+    
+    def _getHistoryCvtermPropTypeIDs(self):
+        cvterm_infos = (
+            { "cv" : "genedb_misc",         "cvterm" : "qualifier" }, 
+            { "cv" : "genedb_misc",         "cvterm" : "curatorName" }, 
+            { "cv" : "feature_property",    "cvterm" : "date" }
+        )
+
+        for cvterm_info in cvterm_infos:
+            cvterm_info["id"] = self.queries.getCvtermID( cvterm_info["cv"], [cvterm_info["cvterm"]] )[0]
+
+        return cvterm_infos
+
+
+        
+class Histories(BaseController):
+    """History related queries"""
+    
+    @cherrypy.expose
+    @ropy.server.service_format("history_annotations")
+    def annotation_changes(self, taxonomyID, since):
+        """Returns a list of genes that have been detected to have annotation changes."""
+        
+        organism_id = self.queries.getOrganismFromTaxon(taxonomyID)
+        
+        cvterm_infos = self._getHistoryCvtermPropTypeIDs()
+
+        qualifier_type_id = cvterm_infos[0]["id"]
+        curatorName_type_id = cvterm_infos[1]["id"]
+        date_type_id = cvterm_infos[2]["id"]
+
+        rows = self.queries.getGenesWithHistoryChangesAnywhere(organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id)
+        
+        serving = ropy.server.serving
+        
+        results = []
+        for row in rows:
+            
+            result = {
+                "type" : row["type"],
+                "feature_type" : row["ftype"],
+                "feature" : row["f"],
+                "change" : row["changedetail"],
+                "date" : row["changedate"]
+            }
+            
+            # do not show the user if the server is serving, i.e. if this is a webservice
+            if serving == False :
+                result["user"] = row["changeuser"]
+            else:
+                result["user"] = "---"
+                
+            fs = (row["f"], row["f2"], row["f3"])
+            ftypes = (row["ftype"], row["ftype2"], row["ftype3"])
+            for i in range(len(ftypes)):
+                ftype = ftypes[i]
+                if ftype == "gene" or ftype == "pseudogene":
+                    result["gene"] = fs[i]
+            
+            results.append(result)
+        
+        data = {
+            "response" : {
+                "name" : "genes/annotation_changes",
+                "taxonomyID" : taxonomyID,
+                "count" : len(results),
+                "since" : since,
+                "results" : results
+            }
+        }
+        
+        return data
+    
+    annotation_changes.arguments = { 
+        "since" : "date formatted as YYYY-MM-DD", 
+        "taxonomyID" : "the NCBI taxonomy ID" 
+    }
+        
     
 class Genes(BaseController):
     """
@@ -215,7 +305,7 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format("private_annotations")
+    @ropy.server.service_format()
     def annotation_changes(self, taxonomyID, since):
         """
             Reports all the genes that have been highlighted as having annotation changes.
@@ -288,29 +378,7 @@ class Genes(BaseController):
     }
     
     
-    def _getGenesWithHistoryChanges(self, organism_id, since):
-
-        cvterm_infos = self._getHistoryCvtermPropTypeIDs()
-
-        qualifier_type_id = cvterm_infos[0]["id"]
-        curatorName_type_id = cvterm_infos[1]["id"]
-        date_type_id = cvterm_infos[2]["id"]
-
-        results = self.queries.getGenesWithHistoryChanges(organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id)
-
-        return results
     
-    def _getHistoryCvtermPropTypeIDs(self):
-        cvterm_infos = (
-            { "cv" : "genedb_misc",         "cvterm" : "qualifier" }, 
-            { "cv" : "genedb_misc",         "cvterm" : "curatorName" }, 
-            { "cv" : "feature_property",    "cvterm" : "date" }
-        )
-        
-        for cvterm_info in cvterm_infos:
-            cvterm_info["id"] = self.queries.getCvtermID( cvterm_info["cv"], [cvterm_info["cvterm"]] )[0]
-        
-        return cvterm_infos
     
     
     

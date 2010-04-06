@@ -79,6 +79,17 @@ class Queries(QueryProcessor):
         
         return returned
     
+    def getGenesWithHistoryChangesAnywhere(self, organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id):
+        returned = self.runQueryAndMakeDictionary("get_history_changes_anywhere", {
+            "organism_id" : organism_id,
+            "since" : since,
+            "date_type_id" : date_type_id,
+            "curatorName_type_id" : curatorName_type_id,
+            "qualifier_type_id" : qualifier_type_id
+        })
+
+        return returned
+    
     def countAllChangedFeaturesForOrganism(self, organism_id, since):
         self.validateDate(since)        
         rows = self.runQuery("count_changed_features_organism", (organism_id, since))
