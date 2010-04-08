@@ -6,7 +6,14 @@ SELECT
     o.genus,
     o.species,
     op.value as taxonID,
-    fcc.name as orthoproduct
+    fcc.name as orthoproduct,
+    fccc.name as orthoproducttype
+    -- (
+    --         SELECT fcc.name from feature_cvterm fc 
+    --         JOIN cvterm fcc ON fc.cvterm_id = fcc.cvterm_id 
+    --         JOIN cv fccc ON fccc.cv_id = fcc.cv_id AND fccc.name = 'genedb_products'
+    --         WHERE fc.feature_id = orthof.feature_id
+    --     ) as orthoproduct
 FROM feature f
 JOIN feature_relationship fr ON f.feature_id = fr.subject_id 
     AND fr.type_id in 
@@ -31,6 +38,6 @@ LEFT JOIN organismprop op on o.organism_id = op.organism_id
 
 LEFT JOIN feature_cvterm fc ON fc.feature_id = orthof.feature_id
 LEFT JOIN cvterm fcc ON fc.cvterm_id = fcc.cvterm_id 
-LEFT JOIN cv fccc ON fccc.cv_id = fcc.cv_id AND fcc.name = 'genedb_products'
+LEFT JOIN cv fccc ON fccc.cv_id = fcc.cv_id AND fccc.name = 'genedb_products'
 
 WHERE f.uniquename in %(features)s
