@@ -5,7 +5,8 @@ SELECT
     relationshiptype.name as relationship,
     o.genus,
     o.species,
-    op.value as taxonID
+    op.value as taxonID,
+    fcc.name as orthoproduct
 FROM feature f
 JOIN feature_relationship fr ON f.feature_id = fr.subject_id 
     AND fr.type_id in 
@@ -27,4 +28,9 @@ LEFT JOIN organismprop op on o.organism_id = op.organism_id
         on cvterm.cv_id = cvterm.cv_id 
         where cv.name = 'genedb_misc' 
         and cvterm.name = 'taxonId')
+
+LEFT JOIN feature_cvterm fc ON fc.feature_id = orthof.feature_id
+LEFT JOIN cvterm fcc ON fc.cvterm_id = fcc.cvterm_id 
+LEFT JOIN cv fccc ON fccc.cv_id = fcc.cv_id AND fcc.name = 'genedb_products'
+
 WHERE f.uniquename in %(features)s
