@@ -737,7 +737,153 @@ class Features(BaseController):
         "region" : "the region upon which you want to get the features",
         "features" : "a list of features whose sequences you wish to retrieve, located on the region"
     }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def summary(self, features, relationships = ["derives_from", "part_of"]):
+        """
+           A summary of a feature.
+        """
+        
+        features = ropy.server.to_array(features)
+        
+        featureproperties = self.queries.getFeatureProps(features)
+        terms = self.queries.getFeatureCVTerm(features, [])
+        featurecoordinates = self.queries.getFeatureCoordinates(features)
+        
+        pubs = self.queries.getFeaturePub(features)
+        dbxrefs = self.queries.getFeatureDbxrefs(features)
+        
+        relationship_ids = self._get_relationship_ids(relationships)
+        relationships = self.queries.getRelationships(features, relationship_ids)
+        
+        return {
+            "response" : {
+                "name" : "features/summary",
+                "coordinates" : featurecoordinates,
+                "properties" : featureproperties,
+                "terms" : terms,
+                "pubs" : pubs,
+                "dbxrefs" : dbxrefs,
+                "relationships" : relationships
+            }
+        }
+        
+    summary.arguments = {
+        "features" : "a list of features whose sequences you wish to retrieve"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def relationships(self, features, relationships = ["derives_from", "part_of"]):
+        """
+           Gets the relationships of a feature.
+        """
+        
+        features = ropy.server.to_array(features)
+        relationship_ids = self._get_relationship_ids(relationships)
+        
+        results = self.queries.getRelationships(features, relationship_ids)
+        
+        return {
+            "response" : {
+                "name" : "features/relationships",
+                "results" : results
+            }
+        }
+        
+    relationships.arguments = {
+        "features" : "a list of features whose sequences you wish to retrieve",
+        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]"
+    }
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def pubs(self, features):
+        """
+           Gets the pubs of a feature.
+        """
+        
+        features = ropy.server.to_array(features)
+        
+        results = self.queries.getFeaturePub(features)
+        
+        return {
+            "response" : {
+                "name" : "features/pubs",
+                "results" : results
+            }
+        }
+        
+    pubs.arguments = {
+        "features" : "a list of features",
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def dbxrefs(self, features):
+        """
+           Gets the dbxrefs of a feature.
+        """
+        
+        features = ropy.server.to_array(features)
+        results = self.queries.getFeatureDbxrefs(features)
+        
+        return {
+            "response" : {
+                "name" : "features/dbxrefs",
+                "results" : results
+            }
+        }
+        
+    dbxrefs.arguments = {
+        "features" : "a list of features",
+    }
 
+
+class Terms(BaseController):
+    """
+        Controlled vocabulary related queries.
+    """
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def vocabularies(self):
+        """
+           Gets a list of all the controlled vocabularies in the database.
+        """
+        
+        
+        results = self.queries.getCV()
+        
+        return {
+            "response" : {
+                "name" : "terms/vocabularies",
+                "results" : results
+            }
+        }
+    vocabularies.arguments = {}
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def list(self, vocabularies):
+        """
+           Gets a list of all the terms in specified controlled vocabularies.
+        """
+        
+        vocabularies = ropy.server.to_array(vocabularies)
+        results = self.queries.getCvterms(vocabularies)
+        
+        return {
+            "response" : {
+                "name" : "terms/list",
+                "results" : results
+            }
+        }
+    list.arguments = {
+        "vocabularies" : "the controlled vocabularies you want to extract terms from"
+    }
 
 class Regions(BaseController):
     """

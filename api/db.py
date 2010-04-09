@@ -252,6 +252,28 @@ class Queries(QueryProcessor):
             "relationships" : tuple(relationships)
         })
     
+    def getRelationships(self, features, relationships):
+        return self.runQueryAndMakeDictionary("get_relationships", {
+            "features" : tuple(features),
+            "relationships" : tuple(relationships)
+        })
+    
+    def getFeaturePub(self, features):
+        return self.runQueryAndMakeDictionary("get_feature_pubs", {
+            "features" : tuple(features)
+        })
+    
+    def getFeatureDbxrefs(self, features):
+        return self.runQueryAndMakeDictionary("get_feature_dbxrefs", {
+            "features" : tuple(features)
+        })
+    
+    def getCV(self):
+        return self.runQueryAndMakeDictionary("get_cv")
+    
+    def getCvterms(self, cvs):
+        return self.runQueryAndMakeDictionary("get_cvterms_from_cv", { "cvs" : tuple(cvs) })
+    
     def validateDate(self, date):
         try:
             time.strptime(date,"%Y-%m-%d")
