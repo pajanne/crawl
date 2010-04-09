@@ -740,7 +740,7 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def summary(self, features, relationships = ["derives_from", "part_of"]):
+    def summary(self, features):
         """
            A summary of a feature.
         """
@@ -754,8 +754,8 @@ class Features(BaseController):
         pubs = self.queries.getFeaturePub(features)
         dbxrefs = self.queries.getFeatureDbxrefs(features)
         
-        relationship_ids = self._get_relationship_ids(relationships)
-        relationships = self.queries.getRelationships(features, relationship_ids)
+        relationship_ids = self._get_relationship_ids(["derives_from", "part_of"])
+        relationship_results = self.queries.getRelationships(features, relationship_ids)
         
         return {
             "response" : {
@@ -765,7 +765,7 @@ class Features(BaseController):
                 "terms" : terms,
                 "pubs" : pubs,
                 "dbxrefs" : dbxrefs,
-                "relationships" : relationships
+                "relationships" : relationship_results
             }
         }
         
@@ -781,6 +781,8 @@ class Features(BaseController):
         """
         
         features = ropy.server.to_array(features)
+        relationships = ropy.server.to_array(relationships)
+        
         relationship_ids = self._get_relationship_ids(relationships)
         
         results = self.queries.getRelationships(features, relationship_ids)
