@@ -912,7 +912,8 @@ class Regions(BaseController):
                     "start" : start,
                     "end" : end,
                     "length" : length,
-                    "dna" : dna
+                    "dna" : dna,
+                    "organism_id" : row["organism_id"]
                 }]
             }
         }

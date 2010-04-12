@@ -107,8 +107,7 @@ class Queries(QueryProcessor):
     
     
     def getRegionSequence(self, uniqueName):
-        rows = self.runQueryAndMakeDictionary("region_sequence", (uniqueName, ))
-        return rows
+        return self.runQueryAndMakeDictionary("region_sequence", (uniqueName, ))
     
     def getCvtermID(self, cvname, cvtermnames ):
         args = {"cvtermnames" : tuple(cvtermnames), "cvname" : cvname }
