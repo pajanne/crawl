@@ -85,7 +85,30 @@ class BaseController(ropy.server.RESTController):
             cvterm_info["id"] = self.queries.getCvtermID( cvterm_info["cv"], [cvterm_info["cvterm"]] )[0]
 
         return cvterm_infos
-
+    
+    def _sql_results_to_collection(self, key, collection_name, results):
+        
+        hash_store = {}
+        collection = []
+        
+        for result in results:
+            if key not in result: 
+                raise ropy.server.ServerException("Could not parse the result because it does not have the %s key" % key, ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
+            
+            result_key_value = result[key]
+            del result[key]
+            
+            if result_key_value not in hash_store:
+                hash_store[result_key_value] = {
+                    key : result_key_value,
+                    collection_name : []
+                }
+                collection.append(hash_store[result_key_value])
+            
+            hash_store[result_key_value][collection_name].append(result)
+        
+        hash_store = None
+        return collection
 
         
 class Histories(BaseController):
@@ -808,13 +831,12 @@ class Features(BaseController):
         """
         
         features = ropy.server.to_array(features)
-        
-        results = self.queries.getFeaturePub(features)
+        results = self._sql_results_to_collection("feature", "pubs", self.queries.getFeaturePub(features))
         
         return {
             "response" : {
                 "name" : "features/pubs",
-                "results" : results
+                "features" : results
             }
         }
         
@@ -830,12 +852,12 @@ class Features(BaseController):
         """
         
         features = ropy.server.to_array(features)
-        results = self.queries.getFeatureDbxrefs(features)
+        results = self._sql_results_to_collection("feature", "dbxrefs", self.queries.getFeatureDbxrefs(features))
         
         return {
             "response" : {
                 "name" : "features/dbxrefs",
-                "results" : results
+                "features" : results
             }
         }
         

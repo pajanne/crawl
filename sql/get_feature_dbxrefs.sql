@@ -1,5 +1,5 @@
 SELECT 
-    feature.uniquename,
+    feature.uniquename as feature,
     dbxref.accession,
     db.name
 FROM feature
