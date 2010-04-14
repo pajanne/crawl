@@ -1,7 +1,7 @@
 SELECT 
     feature.uniquename as feature,
     dbxref.accession,
-    db.name
+    db.name as database
 FROM feature
 JOIN feature_dbxref ON feature_dbxref.feature_id = feature.feature_id
 JOIN dbxref ON dbxref.dbxref_id = feature_dbxref.dbxref_id
