@@ -428,13 +428,16 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featureproperties(self, uniqueNames=[], u=[], us=None, delimiter = ","):
+    def properties(self, features = [], uniqueNames=[], u=[], us=None, delimiter = ","):
         """
             Returns featureprops for a given set of uniqueNames.
         """
         
         # build the uniqueNames array from different possilble kwargs
         uniqueNames = ropy.server.to_array(uniqueNames) 
+        
+        features = ropy.server.to_array(features)
+        if len(features) > 0: uniqueNames.extend(features)
         
         u = ropy.server.to_array(u)
         if len(u) > 0: uniqueNames.extend(u)
@@ -448,37 +451,37 @@ class Features(BaseController):
             raise ropy.server.ServerException("Please provide at least one  uniqueName using either the uniqueNames, u or us parameters.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
         
         
-        results = self.queries.getFeatureProps(uniqueNames)
+        results = self._sql_results_to_collection("feature", "props", self.queries.getFeatureProps(uniqueNames))
         
-        prop_dict = {}
-        prop_list = []
-        
-        for r in results:
-            uniquename = r.pop("uniquename")
-            
-            if uniquename not in prop_dict:
-                prop_dict[uniquename] = {
-                    "uniquename" : uniquename,
-                    "props" : []
-                }
-                prop_list.append(prop_dict[uniquename])
-            
-            this_feature_prop = prop_dict[uniquename]
-            this_feature_prop["props"].append(r)
-            
-        
-        prop_dict = None
+        # prop_dict = {}
+        #         prop_list = []
+        #         
+        #         for r in results:
+        #             uniquename = r.pop("uniquename")
+        #             
+        #             if uniquename not in prop_dict:
+        #                 prop_dict[uniquename] = {
+        #                     "uniquename" : uniquename,
+        #                     "props" : []
+        #                 }
+        #                 prop_list.append(prop_dict[uniquename])
+        #             
+        #             this_feature_prop = prop_dict[uniquename]
+        #             this_feature_prop["props"].append(r)
+        #             
+        #         
+        #         prop_dict = None
         
         data = {
             "response" : {
                 "name" : "genes/featureproperties",
-                "features" : prop_list
+                "features" : results
             }
         }
-        #data = self.api.getFeatureProps(uniqueNames)
         return data
     
-    featureproperties.arguments = {
+    properties.arguments = {
+        "features" : "the uniqueName of the feature whose properties you're after",
         "uniqueName" : "the uniqueName of the feature whose properties you're after",
         "u" : "shorthand for the uniqueName parameter",
         "us" : "a single string making up a list of uniqueNames, delimited by the delimiter parameter",
@@ -604,10 +607,10 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def featurecoordinates(self, features, region = None):
+    def coordinates(self, features, region = None):
         
         features = ropy.server.to_array(features)
-        results = self.queries.getFeatureCoordinates(features, region)
+        results = self._sql_results_to_collection("feature", "regions", self.queries.getFeatureCoordinates(features, region))
         
         data = {
             "response" : {
@@ -616,26 +619,13 @@ class Features(BaseController):
             }
         }
         return data
-    featurecoordinates.arguments = {
+    coordinates.arguments = {
         "features": "the features" ,
         "region" : "the region upon which the features are located (optional, if not supplied it should fetch all locations)" 
     }
     
-    @cherrypy.expose
-    @ropy.server.service_format()
-    def terms(self, features, controlled_vocabularies = []):
-        """
-            Returns cvterms of type cv_names associated with list of features.
-        """
-        
-        features = ropy.server.to_array(features)
-        controlled_vocabularies = ropy.server.to_array(controlled_vocabularies)
-        
-        logger.debug(features)
-        logger.debug(controlled_vocabularies)
-        
-        results = self.queries.getFeatureCVTerm(features, controlled_vocabularies)
-        
+    
+    def _parse_feature_cvterms(self, results):
         to_return = []
         feature_store = {}
         cvterm_store = {}
@@ -674,11 +664,27 @@ class Features(BaseController):
             
         feature_store = None
         cvterm_store = None
+        return to_return
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def terms(self, features, controlled_vocabularies = []):
+        """
+            Returns cvterms of type cv_names associated with list of features.
+        """
+        
+        features = ropy.server.to_array(features)
+        controlled_vocabularies = ropy.server.to_array(controlled_vocabularies)
+        
+        logger.debug(features)
+        logger.debug(controlled_vocabularies)
+        
+        results = self._parse_feature_cvterms(self.queries.getFeatureCVTerm(features, controlled_vocabularies))
         
         data = {
             "response" : {
                 "name" :"features/terms",
-                "features" : to_return
+                "features" : results
             }
         }
         return data
@@ -770,15 +776,15 @@ class Features(BaseController):
         
         features = ropy.server.to_array(features)
         
-        featureproperties = self.queries.getFeatureProps(features)
-        terms = self.queries.getFeatureCVTerm(features, [])
-        featurecoordinates = self.queries.getFeatureCoordinates(features)
+        featureproperties = self._sql_results_to_collection("feature", "props",self.queries.getFeatureProps(features))
+        terms = self._parse_feature_cvterms(self.queries.getFeatureCVTerm(features, []))
+        featurecoordinates = self._sql_results_to_collection("feature", "regions", self.queries.getFeatureCoordinates(features))
         
-        pubs = self.queries.getFeaturePub(features)
-        dbxrefs = self.queries.getFeatureDbxrefs(features)
+        pubs = self._sql_results_to_collection("feature", "pubs", self.queries.getFeaturePub(features))
+        dbxrefs = self._sql_results_to_collection("feature", "dbxrefs", self.queries.getFeatureDbxrefs(features))
         
         relationship_ids = self._get_relationship_ids(["derives_from", "part_of"])
-        relationship_results = self.queries.getRelationships(features, relationship_ids)
+        relationship_results = self._sql_results_to_collection("feature", "relations", self.queries.getRelationships(features, relationship_ids))
         
         return {
             "response" : {
@@ -808,7 +814,7 @@ class Features(BaseController):
         
         relationship_ids = self._get_relationship_ids(relationships)
         
-        results = self.queries.getRelationships(features, relationship_ids)
+        results = self._sql_results_to_collection("feature", "relations", self.queries.getRelationships(features, relationship_ids))
         
         return {
             "response" : {

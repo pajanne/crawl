@@ -1,6 +1,6 @@
 SELECT 
 
-target.uniquename as target,
+target.uniquename as feature,
 parent.uniquename as relation,
 'parent' as relationship,
 cvterm.name as type
@@ -17,7 +17,7 @@ UNION
 
 SELECT
 
-target.uniquename as target,
+target.uniquename as feature,
 child.uniquename as relation,
 'child' as relationship,
 cvterm.name as type
