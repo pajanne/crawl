@@ -4,4 +4,5 @@ Herein lies a server built on Ropy (which itself strings together
 CherryPy, Cheetah and psycopg2), allowing rapid prototyping 
 of chado-related queries. 
 
-Requires Python 2.5+.
+Requires Python 2.5+, or Jython 2.5.1. 
+

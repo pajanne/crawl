@@ -2,6 +2,7 @@
 import optparse
 import os
 import sys
+import imp
 
 
 import logging #@UnusedImport
@@ -56,31 +57,26 @@ def main():
     
     # get the options
     parser = optparse.OptionParser()
-    parser.add_option("-a", "--appconf", dest="appconf", action="store", help="the path to the application configuration file")
-    parser.add_option("-s", "--serverconf", dest="serverconf", action="store", help="the path to the server configuration file")
-    parser.add_option("-l", "--logconf", dest="logconf", action="store", help="the path to the logging configuration file")
-    parser.add_option('-d', action="store_true", dest='daemonize', help="run as daemon")
+    parser.add_option("-c", "--config", dest="config", action="store", help="the path to the server configuration file")
+    parser.add_option("-l", "--logging", dest="logging", action="store", help="the path to the logging configuration file")
+    parser.add_option('-d', "--daemonize", dest='daemonize', action="store_true", help="run as daemon")
     parser.add_option('-p', '--pidfile', dest='pidfile', default=None, help="store the process id in the given file")
     parser.add_option('-t', '--test', dest='test', action="store_true", default=False, help="switch on testing controllers")
     
-    
     (options, args) = parser.parse_args()
     
-    logger.debug(options)
-    logger.debug(args)
-    
-    for option in ['appconf', 'serverconf', 'logconf']:
+    for option in ['config', 'logging']:
         if getattr(options, option) == None:
             print "Please supply a --%s parameter.\n" % (option)
             parser.print_help()
             sys.exit()
     
     try:
-        logging.config.fileConfig(options.logconf, disable_existing_loggers=False)
+        logging.config.fileConfig(options.logging, disable_existing_loggers=False)
     except Exception, e:
         print e
         print "Warning: could not setup logging with disable_existing_loggers=False flag."
-        logging.config.fileConfig(options.logconf)
+        logging.config.fileConfig(options.logging)
     
     # make a tree of controller instances
     root = Root()
@@ -98,9 +94,11 @@ def main():
     mapper = cherrypy.dispatch.RoutesDispatcher()
     generate_mappings(root, mapper)
     
+    # load the configuration
+    config = imp.load_source("config" , options.config)
     
-    # global settings that should be in the conf file
-    cherrypy.config.update(options.appconf)
+    # global settings that should be in the config file
+    cherrypy.config.update(config.crawl)
     
     # global settings that should not be in the config file
     cherrypy.config.update({
@@ -109,15 +107,9 @@ def main():
         'tools.proxy.on': True
     })
     
-    
-    
-    # app specific settings
-    cherrypy.config.update(options.serverconf)
-    
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
-    
-    # app specific settings
+    # app specific settings, that we don't want set in the config file
     appconfig = {
         '/' : {
             'request.dispatch' : mapper,
@@ -146,9 +138,11 @@ def main():
     # import ropy.alchemy.sqlalchemy_tool
     import ropy.psy.psycopg2_tool #@UnusedImport
     
+    if sys.platform[:4] == 'java':
+        cherrypy.config.update({'server.nodelay': False})
+    
     ropy.server.serve()
     
-    # cherrypy.quickstart(root, "/", options.conf)
     app = cherrypy.tree.mount(root, "/", appconfig)
     app2 = cherrypy.tree.mount(StaticRoot(), "/htm", appconfig2)
     
@@ -164,8 +158,10 @@ def main():
     if options.pidfile:
         plugins.PIDFile(engine, options.pidfile).subscribe()
     
-    if hasattr(engine, "signal_handler"):
+    # for some reason, accessing the signal handler currently breaks in Jython
+    if hasattr(engine, "signal_handler") and sys.platform[:4] != 'java':
         engine.signal_handler.subscribe()
+    
     if hasattr(engine, "console_control_handler"):
         engine.console_control_handler.subscribe()
     
