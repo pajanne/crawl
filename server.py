@@ -86,6 +86,7 @@ def main():
     root.regions = api.controllers.Regions()
     root.histories = api.controllers.Histories()
     root.terms = api.controllers.Terms()
+    root.plots = api.controllers.Plots()
     
     if options.test == True:
         root.testing = api.controllers.Testing()

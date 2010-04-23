@@ -273,6 +273,39 @@ class Queries(QueryProcessor):
     def getCvterms(self, cvs):
         return self.runQueryAndMakeDictionary("get_cvterms_from_cv", { "cvs" : tuple(cvs) })
     
+    
+    def getUserPlot(self, feature):
+        logger.debug(self.queries["get_user_plot"])
+        
+        plots = self.runQuery("get_user_plot", (feature, ))
+        plots_data = []
+        for row in plots:
+            loid = row[0]
+            logger.debug (loid)
+            lobj = self.conn.lobject(loid)
+            logger.debug(lobj)
+            
+            logger.debug(lobj.tell())
+            data1 = lobj.read()
+            logger.debug(lobj.tell())
+            
+            
+            #import zlib
+            #decompression_object = zlib.decompress(data1)
+            
+            #open("test.txt.gz", 'wb').write(data1)
+            
+            from cStringIO import StringIO
+            from gzip import GzipFile
+            
+            data_string = GzipFile('','r',0,StringIO(data1)).read()
+            
+            # logger.debug(data_string)
+            
+            plots_data.append(data_string)
+            
+        return plots_data
+    
     def validateDate(self, date):
         try:
             time.strptime(date,"%Y-%m-%d")

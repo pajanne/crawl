@@ -871,6 +871,26 @@ class Features(BaseController):
         "features" : "a list of features",
     }
 
+class Plots(BaseController):
+    """
+       User plots.
+    """
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def data(self, feature):
+        """
+           Returns the plot data.
+        """
+        
+        plot = self.queries.getUserPlot(feature)
+        
+        return {
+            "response" : {
+                "plot" : plot
+            }
+        }
+    data.arguments = { "feature" : "a feature" }
 
 class Terms(BaseController):
     """
