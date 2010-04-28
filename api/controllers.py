@@ -912,10 +912,10 @@ class Graphs(BaseController):
         
         tracks = []
         
-        for browser in wiggle.browser:
+        for browser in wiggles.browser:
             tracks.append(browser)
         
-        for track in wiggle.tracks:
+        for track in wiggles.tracks:
             tracks.append(str(track))
         
         return {
