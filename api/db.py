@@ -273,38 +273,54 @@ class Queries(QueryProcessor):
     def getCvterms(self, cvs):
         return self.runQueryAndMakeDictionary("get_cvterms_from_cv", { "cvs" : tuple(cvs) })
     
+    def getGraphList(self):
+        return self.runQueryAndMakeDictionary("get_graph_list")
     
-    def getUserPlot(self, feature):
-        logger.debug(self.queries["get_user_plot"])
-        
-        plots = self.runQuery("get_user_plot", (feature, ))
+    def getGraphData(self, id):
+        id=int(id)
+        plots = self.runQuery("get_graph_data", (int(id), ))
+
         plots_data = []
-        for row in plots:
-            loid = row[0]
-            logger.debug (loid)
-            lobj = self.conn.lobject(loid)
-            logger.debug(lobj)
-            
-            logger.debug(lobj.tell())
-            data1 = lobj.read()
-            logger.debug(lobj.tell())
-            
-            
-            #import zlib
-            #decompression_object = zlib.decompress(data1)
-            
-            #open("test.txt.gz", 'wb').write(data1)
-            
-            from cStringIO import StringIO
-            from gzip import GzipFile
-            
-            data_string = GzipFile('','r',0,StringIO(data1)).read()
-            
-            # logger.debug(data_string)
-            
-            plots_data.append(data_string)
-            
-        return plots_data
+        
+        row = plots[0]
+        
+        graph_id = row[0]
+        feature_name = row[1]
+        graph_name = row[2]
+        
+        #print graph_id
+        #print feature_name
+        #print graph_name
+        
+        loid = row[3]
+        
+        #print loid
+        
+        logger.debug (loid)
+        lobj = self.conn.lobject(loid)
+        logger.debug(lobj)
+        
+        logger.debug(lobj.tell())
+        data1 = lobj.read()
+        logger.debug(lobj.tell())
+        
+        #import zlib
+        #decompression_object = zlib.decompress(data1)
+        
+        #open("test.txt.gz", 'wb').write(data1)
+        
+        from cStringIO import StringIO
+        from gzip import GzipFile
+        
+        data_string = GzipFile('','r',0,StringIO(data1)).read()
+        
+        return {
+            "id" : graph_id,
+            "feature": feature_name,
+            "name" : graph_name, 
+            "data" : data_string
+        }
+        
     
     def validateDate(self, date):
         try:

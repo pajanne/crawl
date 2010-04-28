@@ -64,7 +64,9 @@ def call_method(api, method_name, args):
                     se.info += method_usage(method)
                 raise se
             except Exception,e:
-                logger.error(e)
+                import traceback   
+                # traceback.print_exc()
+                # logger.error(e)
                 raise ropy.server.ServerException(str(e), ropy.server.ERROR_CODES["MISC_ERROR"], method_usage(method))
         else:
             raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
@@ -218,6 +220,9 @@ def main(database = None):
         print e.value
         print BASIC_USAGE
         
+        # import traceback   
+        # traceback.print_exc()
+        
         if e.info != None: print e.info
         sys.exit(e.code + 1)
         
@@ -227,9 +232,9 @@ def main(database = None):
             fail_with_json(1)
         
         print "Error:"
-        print str(e)
+        # print str(e)
         # import traceback   
-        # traceback.print_exc()
+        traceback.print_exc()
         sys.exit(BASIC_USAGE)
 
 

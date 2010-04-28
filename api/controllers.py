@@ -12,13 +12,14 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 
 import os
 import cherrypy
-
 import logging
 
 logger = logging.getLogger("crawl")
 
 import ropy.server
 import db
+
+from userplot.parser.wiggle import Wiggles, Track, WiggleException
 
 class BaseController(ropy.server.RESTController):
     """
@@ -871,26 +872,237 @@ class Features(BaseController):
         "features" : "a list of features",
     }
 
-class Plots(BaseController):
+class Graphs(BaseController):
     """
-       User plots.
+       Plots plots.
     """
+    
+    def _get_graph(self, id):
+        if hasattr(self, "graphs") == False:
+            self.graphs = {}
+        sid = str(id)
+        if sid not in self.graphs:
+            result = self.queries.getGraphData(sid)
+            wiggles = Wiggles(result["data"])
+            self.graphs[sid] = wiggles
+        return self.graphs[sid]
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def data(self, feature):
+    def list(self):
         """
-           Returns the plot data.
+           Returns a list of all the graphs in the database.
+        """
+        return {
+            "response" : {
+                "name" : "graphs/list",
+                "plots" : self.queries.getGraphList()
+            }
+        }
+    list.arguments = { }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def data(self, id):
+        """
+           Returns the entire graph data.
         """
         
-        plot = self.queries.getUserPlot(feature)
+        wiggles = self._get_graph(id)
+        
+        tracks = []
+        
+        for browser in wiggle.browser:
+            tracks.append(browser)
+        
+        for track in wiggle.tracks:
+            tracks.append(str(track))
         
         return {
             "response" : {
-                "plot" : plot
+                "name" : "graphs/data",
+                "graph" : "\n".join(tracks)
             }
         }
-    data.arguments = { "feature" : "a feature" }
+    data.arguments = { "id" : "the id of the graph" }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def info(self, id):
+        """
+           Returns the information about a graph.
+        """
+        
+        wiggles = self._get_graph(id)
+        
+        tracks = {}
+        tracks["browser"] = wiggles.browser
+        tracks["tracks"] = []
+        
+        for track in wiggles.tracks:
+            tracks["tracks"].append({
+                "info" : track.info()
+            })
+        
+        return {
+            "response" : {
+                "name" : "graphs/data",
+                "graph" : tracks
+            }
+        }
+    data.arguments = { "id" : "the id of the graph" }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def fixed(self, id, step, span, start, end, format=False):
+        """
+           Returns the plot data in fixed-step format.
+        """
+        
+        wiggles = self._get_graph(id)
+        format = ropy.server.to_bool(format)
+        tracks = []
+        
+        for track in wiggles.tracks:
+            
+            if format:
+                tracks.append(track._format_fixed(step, span, start, end))
+            else:
+                tracks.append({
+                    "info" : track.info(),
+                    "data" : track.fixed(step, span, start, end)
+                })
+        
+        return {
+            "response" : {
+                "name" : "plots/fixed",
+                "tracks" : tracks
+            }
+        }
+    fixed.arguments = { 
+        "id" : "the id of the graph",
+        "step" : "the desired step size (optional - defaults to whatever is in the file)",
+        "span" : "the desired span size (optional - defaults to whatever is in the file)",
+        "start" : "the start point window (optional - defaults to the start of the data)",
+        "end" : "the end point window (optional - defaults to the end of the data plus the span)",
+        "format" : "if true, will return the data as a wiggle track string inside the json, if false, will serialise it to json"
+    }
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def fixed_scaled(self, id, step , span, start, end, format=False, minimum = 0, maximum = 1):
+        """
+           Returns the plot data in fixed-step format, scaled between the minimum and maximum parameters.
+        """
+        
+        wiggles = self._get_graph(id)
+        format = ropy.server.to_bool(format)
+        tracks = []
+        
+        for track in wiggles.tracks:
+            
+            # make a new track that is scaled
+            track = track.scale(minimum, maximum)
+            
+            if format:
+                tracks.append(track._format_fixed(step, span, start, end))
+            else:
+                tracks.append({
+                    "info" : track.info(),
+                    "data" : track.fixed(step, span, start, end)
+                })
+        
+        return {
+            "response" : {
+                "name" : "plots/fixed",
+                "tracks" : tracks
+            }
+        }
+    fixed_scaled.arguments = { 
+        "id" : "the id of the graph",
+        "step" : "the desired step size (optional - defaults to whatever is in the file)",
+        "span" : "the desired span size (optional - defaults to whatever is in the file)",
+        "start" : "the start point window (optional - defaults to the start of the data)",
+        "end" : "the end point window (optional - defaults to the end of the data plus the span)",
+        "format" : "if true, will return the data as a wiggle track string inside the json, if false, will serialise it to json",
+        "minimum" : "the bottom value of the scale",
+        "maximum" : "the top value of the scale"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def variable(self, id, steps, span = None, format=False):
+        """
+           Returns the plot data in variable-step format.
+        """
+        
+        steps = ropy.server.to_array(steps)
+        
+        wiggles = self._get_graph(id)
+        tracks = []
+        for track in wiggles.tracks:
+            if format:
+                tracks.append(track._format_variable(steps, span))
+            else:
+                tracks.append({
+                    "info" : track.info(),
+                    "data" : track.variable(steps, span)
+                })
+        
+        return {
+            "response" : {
+                "name" : "plots/fixed",
+                "tracks" : tracks
+            }
+        }
+    variable.arguments = { 
+        "id" : "the id of the graph",
+        "steps" : "an array of steps that you want list",
+        "span" : "the desired span size (optional - defaults to whatever is in the file)",
+        "format" : "if true, will return the data as a wiggle track string inside the json, if false, will serialise it to json"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def variable_scaled(self, id, steps, span = None, format=False, minimum = 0, maximum = 1):
+        """
+           Returns the plot data in variable-step format, scaled between the minimum and maximum parameters.
+        """
+        
+        steps = ropy.server.to_array(steps)
+        
+        wiggles = self._get_graph(id)
+        tracks = []
+        for track in wiggles.tracks:
+            
+            # make a new track that is scaled
+            track = track.scale(minimum, maximum)
+            
+            if format:
+                tracks.append(track._format_variable(steps, span))
+            else:
+                tracks.append({
+                    "info" : track.info(),
+                    "data" : track.variable(steps, span)
+                })
+        
+        return {
+            "response" : {
+                "name" : "plots/fixed",
+                "tracks" : tracks
+            }
+        }
+    variable_scaled.arguments = { 
+        "id" : "the id of the graph",
+        "steps" : "an array of steps that you want list",
+        "span" : "the desired span size (optional - defaults to whatever is in the file)",
+        "format" : "if true, will return the data as a wiggle track string inside the json, if false, will serialise it to json",
+        "minimum" : "the bottom value of the scale",
+        "maximum" : "the top value of the scale"
+    }
+    
+
 
 class Terms(BaseController):
     """
@@ -931,6 +1143,7 @@ class Terms(BaseController):
                 "results" : results
             }
         }
+        
     list.arguments = {
         "vocabularies" : "the controlled vocabularies you want to extract terms from"
     }
