@@ -19,6 +19,7 @@ import controllers
 import logging
 logger = logging.getLogger("crawl")
 
+
 BASIC_USAGE = """
 Usage:  python crawler.py -query path/function [-database host:5432/database?user] [-always_return_json=true|false] [options]
 """
@@ -65,8 +66,8 @@ def call_method(api, method_name, args):
                 raise se
             except Exception,e:
                 import traceback   
-                # traceback.print_exc()
-                # logger.error(e)
+                logger.error(traceback.format_exc())
+                logger.error(e)
                 raise ropy.server.ServerException(str(e), ropy.server.ERROR_CODES["MISC_ERROR"], method_usage(method))
         else:
             raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
@@ -216,12 +217,15 @@ def main(database = None):
         if always_return_json == "true":
             fail_with_json(e.code + 1)
         
+        
+        import traceback   
+        logger.error(traceback.format_exc())
+        logger.error(e)
+        
         print "Error:"
         print e.value
         print BASIC_USAGE
         
-        # import traceback   
-        # traceback.print_exc()
         
         if e.info != None: print e.info
         sys.exit(e.code + 1)
@@ -231,10 +235,11 @@ def main(database = None):
         if always_return_json == "true":
             fail_with_json(1)
         
+        import traceback   
+        logger.error(traceback.format_exc())
+        logger.error(e)
+        
         print "Error:"
-        # print str(e)
-        # import traceback   
-        traceback.print_exc()
         sys.exit(BASIC_USAGE)
 
 
