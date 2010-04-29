@@ -277,26 +277,18 @@ class Queries(QueryProcessor):
         return self.runQueryAndMakeDictionary("get_graph_list")
     
     def getGraphData(self, id):
-        id=int(id)
+        
         plots = self.runQuery("get_graph_data", (int(id), ))
-
-        plots_data = []
         
         row = plots[0]
         
         graph_id = row[0]
         feature_name = row[1]
         graph_name = row[2]
-        
-        #print graph_id
-        #print feature_name
-        #print graph_name
-        
         loid = row[3]
         
-        #print loid
+        logger.debug((graph_id, feature_name, graph_name, loid))
         
-        logger.debug (loid)
         lobj = self.conn.lobject(loid)
         logger.debug(lobj)
         
@@ -304,21 +296,18 @@ class Queries(QueryProcessor):
         data1 = lobj.read()
         logger.debug(lobj.tell())
         
-        #import zlib
-        #decompression_object = zlib.decompress(data1)
-        
-        #open("test.txt.gz", 'wb').write(data1)
-        
         from cStringIO import StringIO
         from gzip import GzipFile
         
-        data_string = GzipFile('','r',0,StringIO(data1)).read()
+        data_unzipped = GzipFile('','r',0,StringIO(data1))
+        
+        # logger.debug(data_unzipped)
         
         return {
             "id" : graph_id,
             "feature": feature_name,
             "name" : graph_name, 
-            "data" : data_string
+            "data" : data_unzipped
         }
         
     
