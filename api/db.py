@@ -23,7 +23,7 @@ logger = logging.getLogger("crawl")
 class Queries(QueryProcessor):
     
     def __init__(self, connectionFactory):
-        super(Queries, self).__init__(connection=connectionFactory, single=True)
+        super(Queries, self).__init__(connection=connectionFactory)
         
         # reset the path to this the sql subfolder at the location class
         self.setSQLFilePath(os.path.dirname(__file__) + "/../sql/")

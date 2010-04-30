@@ -1445,7 +1445,7 @@ class Testing(BaseController):
         """
             Forces the connection to be closed for testing.
         """
-        cherrypy.thread_data.connectionFactory.getSingleConnection().close()
+        cherrypy.thread_data.connectionFactory.getConnection().close()
         data = {
             "response" : {
                 "closed" : "true"

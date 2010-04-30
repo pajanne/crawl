@@ -42,7 +42,7 @@ def close_connection(thread_index):
     """
     logger.info ("attempting to close connection in thread " + str(thread_index))
     if hasattr(cherrypy.thread_data, "connectionFactory"):
-        cherrypy.thread_data.connectionFactory.closeConnection()
+        cherrypy.thread_data.connectionFactory.getConnection().close()
     else:
         logger.debug ("no connection to close in thread " + str(thread_index))
 
