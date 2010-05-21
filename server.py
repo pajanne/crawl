@@ -77,9 +77,8 @@ def main():
         
     except Exception, e:
         print e
-        import traceback   
-        print traceback.format_exc()
-        sys.exit()
+        print "Warning: could not setup logging with disable_existing_loggers=False flag."
+        logging.config.fileConfig(options.logging)
     
     # make a tree of controller instances
     root = Root()
