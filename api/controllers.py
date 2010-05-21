@@ -475,7 +475,7 @@ class Features(BaseController):
         
         data = {
             "response" : {
-                "name" : "genes/featureproperties",
+                "name" : "features/properties",
                 "features" : results
             }
         }
@@ -615,7 +615,7 @@ class Features(BaseController):
         
         data = {
             "response" : {
-                "name" :"genes/featurecoordinates",
+                "name" :"features/coordinates",
                 "coordinates" : results
             }
         }
@@ -871,6 +871,44 @@ class Features(BaseController):
     dbxrefs.arguments = {
         "features" : "a list of features",
     }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def withnamelike(self, term):
+        """
+           Returns features with names like the search term.
+        """
+        return {
+            "response" : {
+                "name" : "features/dbxrefs",
+                "features" : self.queries.getFeatureWithNameLike(term)
+            }
+        }
+        
+    withnamelike.arguments = {
+        "features" : "a list of features",
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def analyses(self, features):
+        """
+           Returns any analyses associated with a feature.
+        """
+        features = ropy.server.to_array(features)
+        results = self._sql_results_to_collection("feature", "analyses", self.queries.getAnlysis(features))
+        return {
+            "response" : {
+                "name" : "features/analyses",
+                "features" : results
+            }
+        }
+    
+    withnamelike.arguments = {
+        "features" : "a list of features",
+    }
+    
+    
 
 class Graphs(BaseController):
     """
@@ -1327,7 +1365,22 @@ class Regions(BaseController):
         "flattened" : "whether you want to the results returned in a nested tree (false) or as a flattened list (true), defaults to false (nested tree)."
     }
     
-    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def featurelocwithnamelike(self, uniqueName, start, end, term):
+        regionID = self.queries.getFeatureID(uniqueName)
+        return {
+            "response" : {
+                "name" : "regions/featureloc", 
+                "features" : self.queries.getFeatureLocsWithNameLike(regionID, start, end, term)
+            }
+        }
+    featurelocwithnamelike.arguments = {
+        "uniqueName" : "the uniqueName of the source feature" ,
+        "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
+        "end" : "the end position of the features locations that you wish to retrieve (counting from 1)"
+    }
+        
     
     @cherrypy.expose
     @ropy.server.service_format()

@@ -1,0 +1,1 @@
+SELECT uniquename as feature FROM feature WHERE uniquename like %(term)s

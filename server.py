@@ -1,19 +1,16 @@
-
 import optparse
 import os
 import sys
 import imp
 
-
-import logging #@UnusedImport
-import logging.config
+import logging
+import util.logconfig
 
 import cherrypy
 from cherrypy.process import plugins
 
 from ropy.server import Root, handle_error, error_page_default, generate_mappings
 from ropy.query import ConnectionFactory
-
 
 import api.controllers
 
@@ -58,25 +55,30 @@ def main():
     # get the options
     parser = optparse.OptionParser()
     parser.add_option("-c", "--config", dest="config", action="store", help="the path to the server configuration file")
-    parser.add_option("-l", "--logging", dest="logging", action="store", help="the path to the logging configuration file")
     parser.add_option('-d', "--daemonize", dest='daemonize', action="store_true", help="run as daemon")
     parser.add_option('-p', '--pidfile', dest='pidfile', default=None, help="store the process id in the given file")
     parser.add_option('-t', '--test', dest='test', action="store_true", default=False, help="switch on testing controllers")
     
     (options, args) = parser.parse_args()
     
-    for option in ['config', 'logging']:
-        if getattr(options, option) == None:
-            print "Please supply a --%s parameter.\n" % (option)
-            parser.print_help()
-            sys.exit()
+    if options.config == None:
+        print "Please supply a config parameter."
+        parser.print_help()
+        sys.exit()
+    
+    # load the configuration
+    config = imp.load_source("config" , options.config)
     
     try:
-        logging.config.fileConfig(options.logging, disable_existing_loggers=False)
+        import logging.config
+        logging.config.fileConfig("ini/logging.ini", disable_existing_loggers=False)
+        #util.logconfig.setup().add(config.log).apply()
+        
     except Exception, e:
         print e
-        print "Warning: could not setup logging with disable_existing_loggers=False flag."
-        logging.config.fileConfig(options.logging)
+        import traceback   
+        print traceback.format_exc()
+        sys.exit()
     
     # make a tree of controller instances
     root = Root()
@@ -86,7 +88,10 @@ def main():
     root.regions = api.controllers.Regions()
     root.histories = api.controllers.Histories()
     root.terms = api.controllers.Terms()
-    root.graphs = api.controllers.Graphs()
+    
+    if sys.platform[:4] != 'java':
+        # currently the graph module depends on numpy
+        root.graphs = api.controllers.Graphs()
     
     if options.test == True:
         root.testing = api.controllers.Testing()
@@ -95,8 +100,6 @@ def main():
     mapper = cherrypy.dispatch.RoutesDispatcher()
     generate_mappings(root, mapper)
     
-    # load the configuration
-    config = imp.load_source("config" , options.config)
     
     # global settings that should be in the config file
     cherrypy.config.update(config.crawl)
@@ -129,7 +132,7 @@ def main():
         }
     }
     
-    logger.debug(os.path.join(current_dir, 'htm/'))
+    #logger.debug(os.path.join(current_dir, 'htm/'))
     
     # assign these listeners to manage connections per thread
     cherrypy.engine.subscribe('start_thread', setup_connection)
@@ -147,8 +150,8 @@ def main():
     app = cherrypy.tree.mount(root, "/", appconfig)
     app2 = cherrypy.tree.mount(StaticRoot(), "/htm", appconfig2)
     
-    logger.debug(app)
-    logger.debug(app2)
+    #logger.debug(app)
+    #logger.debug(app2)
     
     engine = cherrypy.engine
     
@@ -166,7 +169,7 @@ def main():
     if hasattr(engine, "console_control_handler"):
         engine.console_control_handler.subscribe()
     
-    logger.info ("Starting")
+    #logger.info ("Starting")
     
     try:
         engine.start()

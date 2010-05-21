@@ -273,6 +273,20 @@ class Queries(QueryProcessor):
     def getCvterms(self, cvs):
         return self.runQueryAndMakeDictionary("get_cvterms_from_cv", { "cvs" : tuple(cvs) })
     
+    def getFeatureWithNameLike(self, term):
+        return self.runQueryAndMakeDictionary("get_feature_like", { "term" : term } )
+        
+    def getFeatureLocsWithNameLike(self, regionID, start, end, term):
+        return self.runQueryAndMakeDictionary("feature_locs_like", {
+            "regionid": regionID,
+            "start":start,
+            "end":end,
+            "term":term
+        })
+    
+    def getAnlysis(self, features):
+        return self.runQueryAndMakeDictionary("get_analysis", {"features":tuple(features)})
+    
     def getGraphList(self):
         return self.runQueryAndMakeDictionary("get_graph_list")
     
@@ -309,7 +323,8 @@ class Queries(QueryProcessor):
             "name" : graph_name, 
             "data" : data_unzipped
         }
-        
+    
+    
     
     def validateDate(self, date):
         try:
