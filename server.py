@@ -55,6 +55,7 @@ def main():
     # get the options
     parser = optparse.OptionParser()
     parser.add_option("-c", "--config", dest="config", action="store", help="the path to the server configuration file")
+    parser.add_option("-l", "--logging", dest="logging", action="store", help="the path to the logging configuration file")
     parser.add_option('-d', "--daemonize", dest='daemonize', action="store_true", help="run as daemon")
     parser.add_option('-p', '--pidfile', dest='pidfile', default=None, help="store the process id in the given file")
     parser.add_option('-t', '--test', dest='test', action="store_true", default=False, help="switch on testing controllers")
@@ -71,7 +72,7 @@ def main():
     
     try:
         import logging.config
-        logging.config.fileConfig("ini/logging.ini", disable_existing_loggers=False)
+        logging.config.fileConfig(options.logging, disable_existing_loggers=False)
         #util.logconfig.setup().add(config.log).apply()
         
     except Exception, e:
