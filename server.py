@@ -61,11 +61,11 @@ def main():
     parser.add_option('-t', '--test', dest='test', action="store_true", default=False, help="switch on testing controllers")
     
     (options, args) = parser.parse_args()
-    
-    if options.config == None:
-        print "Please supply a config parameter."
-        parser.print_help()
-        sys.exit()
+    for option in ['config', 'logging']:
+          if getattr(options, option) == None:
+              print "Please supply a --%s parameter.\n" % (option)
+              parser.print_help()
+              sys.exit()	
     
     # load the configuration
     config = imp.load_source("config" , options.config)
