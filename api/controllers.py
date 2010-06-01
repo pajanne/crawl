@@ -909,6 +909,34 @@ class Features(BaseController):
     }
     
     
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def blast(self, subject, start, end, target = None, score = None):
+        """
+           Returns any blast matches linked to a subject and a target.
+        """
+        matches = self.queries.getBlastMatch(subject, start, end, target, score)
+        results = {
+            "response" : {
+                "name" : "features/blast",
+                "subject" : subject, 
+                "start" : start,
+                "end" : end, 
+                "count" : len(matches),
+                "matches" : matches
+            }
+        }
+        if target is not None: results["response"]["target"] = target
+        if score is not None: results["response"]["score"] = score
+        return results
+    blast.arguments = {
+        "subject" : "the subject feature",
+        "start" : "the start coordinate",
+        "end" : "the end coordinate",
+        "target" : "the target feature (optional)", 
+        "score" : "the score (optional)"
+    }
+    
 
 class Graphs(BaseController):
     """

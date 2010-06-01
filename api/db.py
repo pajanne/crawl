@@ -285,10 +285,34 @@ class Queries(QueryProcessor):
         })
     
     def getAnlysis(self, features):
-        return self.runQueryAndMakeDictionary("get_analysis", {"features":tuple(features)})
+        return self.runQueryAndMakeDictionary("get_analysis", { "features" : tuple(features) })
+    
+    def getBlastMatch(self, subject, start, end, target = None, score = None):
+        query_string = self.getQuery("get_blast_match")
+        
+        args = {
+            "subject" : subject,
+            "start" : start, 
+            "end" : end, 
+        }
+        
+        if target is not None:
+            args["target"] = target
+            query_string += "\n AND q.uniquename = %(target)s "
+            
+        if score is not None:
+            args["score"] = float(score)
+            query_string += "\n AND analysisfeature.normscore >= %(score)s "
+        
+        logger.debug(query_string)
+        logger.debug(args)
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
+    
     
     def getGraphList(self):
         return self.runQueryAndMakeDictionary("get_graph_list")
+    
     
     def getGraphData(self, id):
         
@@ -324,8 +348,6 @@ class Queries(QueryProcessor):
             "data" : data_unzipped
         }
     
-    
-    
     def validateDate(self, date):
         try:
             time.strptime(date,"%Y-%m-%d")
@@ -338,7 +360,6 @@ class Queries(QueryProcessor):
 
 def main():
     pass
-
 
 if __name__ == '__main__':
     main()
