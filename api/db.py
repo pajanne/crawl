@@ -212,9 +212,10 @@ class Queries(QueryProcessor):
             return self.runQueryAndMakeDictionary("get_features_with_cvterms_in_organism", {"cvterm" : cvterm, "cv" : cv, "organism_id" : organism_id })
     
     def getTermsInOrganism(self, cvs, organism_id):
-        logger.debug(cvs)
-        logger.debug(organism_id)
         return self.runQueryAndMakeDictionary("get_features_with_all_cvterms_of_type_in_organism", {"cvs" : tuple(cvs), "organism_id" : organism_id})
+        
+    def getTermPathParents(self, cv, terms):
+        return self.runQueryAndMakeDictionary("get_cvterm_path_parents", { "cv" : cv, "terms" : tuple(terms) } )
     
     def getFeatureWithProp(self, type, value, regex):
         if regex == False:

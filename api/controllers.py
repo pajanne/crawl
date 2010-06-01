@@ -696,8 +696,13 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def withterm(self, term, controlled_vocabulary):
-        results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary)
+    def withterm(self, term, controlled_vocabulary, taxonID = None):
+        
+        organism_id = None
+        if taxonID is not None: organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        
+        results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary, organism_id)
+            
         
         for result in results:
             term_properties = result["term_properties"]
@@ -728,6 +733,9 @@ class Features(BaseController):
         }
         return data
     withterm.arguments = { "term" : "the controlled vocabulary term", "controlled_vocuabulary" : "the controlled vocabulary name" }
+    
+    
+        
     
     
     @cherrypy.expose
@@ -1213,6 +1221,51 @@ class Terms(BaseController):
     list.arguments = {
         "vocabularies" : "the controlled vocabularies you want to extract terms from"
     }
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def inorganism(self, vocabularies, taxonID):
+        """
+           Returns terms in an organism.
+        """
+        vocabularies = ropy.server.to_array(vocabularies)
+        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        
+        terms = self.queries.getTermsInOrganism(vocabularies, organism_id)
+        
+        return {
+            "response" : {
+                "name" : "terms/inorganism",
+                "taxonID" : taxonID,
+                "terms" : terms
+            }
+        }
+    inorganism.arguments = {
+        "vocabularies" : "the controlled vocabularies you want to extract terms from",
+        "taxonID" : "the taxonID"
+    }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def parents(self, vocabulary, terms):
+        """
+           Returns parent terms.
+        """
+        terms = ropy.server.to_array(terms)
+        parents = self._sql_results_to_collection("term", "parents", self.queries.getTermPathParents(vocabulary, terms))
+        return {
+            "response" : {
+                "name" : "terms/parents",
+                "terms" : parents
+            }
+        }
+    parents.arguments = {
+        "vocabulary" : "the controlled vocabulary",
+        "terms" : "the terms"
+    }
+    
+    
 
 class Regions(BaseController):
     """
