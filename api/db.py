@@ -203,8 +203,18 @@ class Queries(QueryProcessor):
             return self.runQueryAndMakeDictionary("get_feature_cvterms_all", {"features" : tuple(features) })
         return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cvs" : tuple(cvs) })
     
-    def getFeatureWithCVTerm(self, cvterm, cv):
-        return self.runQueryAndMakeDictionary("get_features_with_cvterm", {"cvterm" : cvterm, "cv" : cv })
+    def getFeatureWithCVTerm(self, cvterm, cv, organism_id = None):
+        if organism_id is None:
+            return self.runQueryAndMakeDictionary("get_features_with_cvterm", {"cvterm" : cvterm, "cv" : cv })
+        else:
+            logger.debug(organism_id)
+            logger.debug(self.getQuery("get_features_with_cvterms_in_organism"))
+            return self.runQueryAndMakeDictionary("get_features_with_cvterms_in_organism", {"cvterm" : cvterm, "cv" : cv, "organism_id" : organism_id })
+    
+    def getTermsInOrganism(self, cvs, organism_id):
+        logger.debug(cvs)
+        logger.debug(organism_id)
+        return self.runQueryAndMakeDictionary("get_features_with_all_cvterms_of_type_in_organism", {"cvs" : tuple(cvs), "organism_id" : organism_id})
     
     def getFeatureWithProp(self, type, value, regex):
         if regex == False:
@@ -302,7 +312,7 @@ class Queries(QueryProcessor):
             
         if score is not None:
             args["score"] = float(score)
-            query_string += "\n AND analysisfeature.normscore >= %(score)s "
+            query_string += "\n AND analysisfeature.normscore <= %(score)s "
         
         logger.debug(query_string)
         logger.debug(args)
