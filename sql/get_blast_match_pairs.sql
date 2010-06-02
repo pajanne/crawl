@@ -25,12 +25,9 @@ JOIN analysis ON analysisfeature.analysis_id = analysis.analysis_id
 JOIN featureloc fl2 ON af.feature_id = fl2.feature_id AND fl2.srcfeature_id != f1.feature_id
 JOIN feature f2 ON fl2.srcfeature_id = f2.feature_id AND f2.uniquename = %(f2)s
 
-WHERE
-
-( 
+WHERE (( 
     (fl1.fmin BETWEEN %(start1)s AND %(end1)s ) OR (fl1.fmax BETWEEN %(start1)s AND %(end1)s ) 
-)
-OR
+) OR
 ( 
     (fl2.fmin BETWEEN %(start2)s AND %(end2)s ) OR (fl2.fmax BETWEEN %(start2)s AND %(end2)s ) 
-)
+))

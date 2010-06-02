@@ -947,8 +947,8 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def blastpair(self, f1, start1, end1, f2, start2, end2, score = None):
-        matches = self.queries.getBlastMatchPair(f1, start1, end1, f2, start2, end2, score)
+    def blastpair(self, f1, start1, end1, f2, start2, end2, normscore = None):
+        matches = self.queries.getBlastMatchPair(f1, start1, end1, f2, start2, end2, normscore)
         results = {
             "response" : {
                 "name" : "features/blast",
