@@ -970,7 +970,8 @@ class Features(BaseController):
         "f2" : "a source feature",
         "start2" : "the f2 start coordinate",
         "end2" : "the f2 end coordinate",
-        "normscore" : "a normscore threshold, i.e. only return scores lower than this (optional)"
+        "normscore" : "a normscore threshold, i.e. only return scores lower than this (optional)",
+        "length" : "a length filter, i.e. only return matches of length above or equal to this number (optional)",
     }
 
 class Graphs(BaseController):
