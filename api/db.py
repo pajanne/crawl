@@ -320,10 +320,8 @@ class Queries(QueryProcessor):
         
         return self.runQueryStringAndMakeDictionary(query_string, args)
     
-    def getBlastMatchPair(self, f1, start1, end1, f2, start2, end2, normscore):
+    def getBlastMatchPair(self, f1, start1, end1, f2, start2, end2, length = None, normscore = None):
         query_string = self.getQuery("get_blast_match_pairs")
-        
-        # logger.debug(query_string)
         
         args = {
             "f1":f1,
@@ -331,12 +329,17 @@ class Queries(QueryProcessor):
             "end1":end1,
             "f2":f2,
             "start2":start2,
-            "end2":end2
+            "end2":end2, 
+            "length":length
         }
         
         if normscore is not None:
             args["normscore"] = float(normscore)
             query_string += "\n AND analysisfeature.normscore <= %(normscore)s "
+        
+        if length is not None:
+            args["length"] = float(length)
+            query_string += "\n AND ( (fl1.fmax - fl1.fmin >= %(length)s ) AND (fl2.fmax - fl2.fmin >= %(length)s )) "
         
         logger.debug(query_string)
         logger.debug(args)

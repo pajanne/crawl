@@ -947,8 +947,8 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def blastpair(self, f1, start1, end1, f2, start2, end2, normscore = None):
-        matches = self.queries.getBlastMatchPair(f1, start1, end1, f2, start2, end2, normscore)
+    def blastpair(self, f1, start1, end1, f2, start2, end2, length = None, normscore = None):
+        matches = self.queries.getBlastMatchPair(f1, start1, end1, f2, start2, end2, length, normscore)
         results = {
             "response" : {
                 "name" : "features/blast",
@@ -970,7 +970,7 @@ class Features(BaseController):
         "f2" : "a source feature",
         "start2" : "the f2 start coordinate",
         "end2" : "the f2 end coordinate",
-        "score" : "the score (optional)"
+        "normscore" : "a normscore threshold, i.e. only return scores lower than this (optional)"
     }
 
 class Graphs(BaseController):
