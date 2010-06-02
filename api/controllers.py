@@ -945,6 +945,33 @@ class Features(BaseController):
         "score" : "the score (optional)"
     }
     
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def blastpair(self, f1, start1, end1, f2, start2, end2, score = None):
+        matches = self.queries.getBlastMatchPair(f1, start1, end1, f2, start2, end2, score)
+        results = {
+            "response" : {
+                "name" : "features/blast",
+                "f1" : f1, 
+                "start1" : start1,
+                "end1" : end1, 
+                "f2" : f2, 
+                "start2" : start2,
+                "end2" : end2,
+                "count" : len(matches),
+                "matches" : matches
+            }
+        }
+        return results
+    blastpair.arguments = {
+        "f1" : "a source feature",
+        "start" : "the f1 start coordinate",
+        "end" : "the f1 end coordinate",
+        "f2" : "a source feature",
+        "start2" : "the f2 start coordinate",
+        "end2" : "the f2 end coordinate",
+        "score" : "the score (optional)"
+    }
 
 class Graphs(BaseController):
     """

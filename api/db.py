@@ -320,6 +320,28 @@ class Queries(QueryProcessor):
         
         return self.runQueryStringAndMakeDictionary(query_string, args)
     
+    def getBlastMatchPair(self, f1, start1, end1, f2, start2, end2, score):
+        query_string = self.getQuery("get_blast_match_pairs")
+        
+        logger.debug(query_string)
+        
+        args = {
+            "f1":f1,
+            "start1":start1,
+            "end1":end1,
+            "f2":f2,
+            "start2":start2,
+            "end2":end2
+        }
+        
+        if score is not None:
+            args["score"] = float(score)
+            query_string += "\n AND analysisfeature.normscore <= %(score)s "
+        
+        logger.debug(query_string)
+        logger.debug(args)
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
     
     def getGraphList(self):
         return self.runQueryAndMakeDictionary("get_graph_list")
