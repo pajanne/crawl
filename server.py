@@ -39,9 +39,9 @@ def close_connection(thread_index):
     """
     logger.info ("attempting to close connection in thread " + str(thread_index))
     if hasattr(cherrypy.thread_data, "connectionFactory"):
-        cherrypy.thread_data.connectionFactory.getConnection().close()
+        cherrypy.thread_data.connectionFactory.close()
     else:
-        logger.debug ("no connection to close in thread " + str(thread_index))
+        logger.warn ("no connection factory to close in thread " + str(thread_index))
 
 
 class StaticRoot(object):

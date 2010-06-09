@@ -1398,9 +1398,6 @@ class Regions(BaseController):
     
     
     
-    
-    
-    
     @cherrypy.expose
     @ropy.server.service_format()
     def locations(self, region, start, end, exclude = []):
@@ -1409,22 +1406,25 @@ class Regions(BaseController):
         """
         regionID = self.queries.getFeatureID(region)
         exclude = ropy.server.to_array(exclude)
-        
-        actual_boundaries = self.queries.getFeatureLocationsMaxAndMinBoundaries(regionID, start, end)
+
+        actual_boundaries = self.queries.getFeatureLocationsMaxAndMinBoundaries(regionID, start, end)[0]
         
         logger.debug(actual_boundaries)
         
-        logger.debug(exclude)
-        locations = self.queries.getFeatureLocations(regionID, actual_boundaries[0]["start"], actual_boundaries[0]["end"], exclude)
+        actual_start = actual_boundaries["start"] if actual_boundaries["start"] != "None" else start
+        actual_end = actual_boundaries["end"] if actual_boundaries["end"] != "None" else end
+        
+        locations = self.queries.getFeatureLocations(regionID, actual_start, actual_end, exclude)
         return {
             "response" : {
                 "name" : "features/locations", 
                 "requested_start" : start,
-                "actual_start" : actual_boundaries[0]["start"],
+                "actual_start" :actual_start,
                 "requested_end" : end,
-                "actual_end" : actual_boundaries[0]["end"],
+                "actual_end" : actual_end,
                 "region" : region,
                 "features" : locations,
+                "exclude" : exclude
             }
         }
     locations.arguments = { 
@@ -1697,8 +1697,6 @@ class Testing(BaseController):
     """
         Test related queries.
     """
-
-    
     
     @cherrypy.expose
     @ropy.server.service_format()
@@ -1706,7 +1704,7 @@ class Testing(BaseController):
         """
             Forces the connection to be closed for testing.
         """
-        cherrypy.thread_data.connectionFactory.getConnection().close()
+        cherrypy.thread_data.connectionFactory.close()
         data = {
             "response" : {
                 "closed" : "true"
@@ -1722,8 +1720,12 @@ class Testing(BaseController):
         """
             Runs a query.
         """
-        data = self.api.getAllOrganismsAndTaxonIDs()
-        return data
+        data = self.queries.getAllOrganismsAndTaxonIDs()
+        return {
+            "response" : {
+                "name" : "testing/test",
+                "data" : data
+            }
+        }
     
     test.arguments = {}
-    
