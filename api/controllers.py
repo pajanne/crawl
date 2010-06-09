@@ -1409,11 +1409,20 @@ class Regions(BaseController):
         """
         regionID = self.queries.getFeatureID(region)
         exclude = ropy.server.to_array(exclude)
+        
+        actual_boundaries = self.queries.getFeatureLocationsMaxAndMinBoundaries(regionID, start, end)
+        
+        logger.debug(actual_boundaries)
+        
         logger.debug(exclude)
-        locations = self.queries.getFeatureLocations(regionID, start, end, exclude)
+        locations = self.queries.getFeatureLocations(regionID, actual_boundaries[0]["start"], actual_boundaries[0]["end"], exclude)
         return {
             "response" : {
                 "name" : "features/locations", 
+                "requested_start" : start,
+                "actual_start" : actual_boundaries[0]["start"],
+                "requested_end" : end,
+                "actual_end" : actual_boundaries[0]["end"],
                 "region" : region,
                 "features" : locations,
             }

@@ -146,6 +146,17 @@ class Queries(QueryProcessor):
             return self.runQueryAndMakeDictionary("get_locations_excluding", args)
         return self.runQueryAndMakeDictionary("get_locations", args)
     
+    
+    def getFeatureLocationsMaxAndMinBoundaries(self, region_id, start, end):
+        args = {
+            "regionid": region_id,
+            "start": start,
+            "end": end
+        }
+        return self.runQueryAndMakeDictionary("get_location_min_and_max_boundaries", args)
+
+    
+    
     def getTopLevelTypeID(self):
         rows = self.runQueryExpectingSingleRow("get_top_level_type_id")
         return rows[0][0]
