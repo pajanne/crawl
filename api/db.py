@@ -134,6 +134,18 @@ class Queries(QueryProcessor):
         
         return rows
     
+    
+    def getFeatureLocations(self, region_id, start, end, exclude = []):
+        args = {
+            "regionid": region_id,
+            "start": start,
+            "end": end
+        }
+        if len(exclude) > 0:
+            args["exclude"] = tuple(exclude)
+            return self.runQueryAndMakeDictionary("get_locations_excluding", args)
+        return self.runQueryAndMakeDictionary("get_locations", args)
+    
     def getTopLevelTypeID(self):
         rows = self.runQueryExpectingSingleRow("get_top_level_type_id")
         return rows[0][0]
@@ -264,6 +276,18 @@ class Queries(QueryProcessor):
     
     def getRelationships(self, features, relationships):
         return self.runQueryAndMakeDictionary("get_relationships", {
+            "features" : tuple(features),
+            "relationships" : tuple(relationships)
+        })
+    
+    def getRelationshipsParents(self, features, relationships):
+        return self.runQueryAndMakeDictionary("get_relationships_parents", {
+            "features" : tuple(features),
+            "relationships" : tuple(relationships)
+        })
+    
+    def getRelationshipsChildren(self, features, relationships):
+        return self.runQueryAndMakeDictionary("get_relationships_children", {
             "features" : tuple(features),
             "relationships" : tuple(relationships)
         })

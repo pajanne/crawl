@@ -838,6 +838,69 @@ class Features(BaseController):
     }
     
     
+    
+    def _search_for_relations(self, feature_object, relationship_ids, searching_for = "parents"):
+        """
+           A recursive trawl up or down feature relationships. Can go up (parents) or down (children).
+        """
+        uniquename = feature_object["name"]
+        
+        if searching_for == "parents":
+            relations = self.queries.getRelationshipsParents([uniquename], relationship_ids)
+        elif searching_for == "children":
+            relations = self.queries.getRelationshipsChildren([uniquename], relationship_ids)
+        else:
+            raise ropy.server.ServerException("Wrong searching_for value: " + searching_for, ropy.server.ERROR_CODES["BAD_PARAMETER"])
+        
+        for relation in relations:
+            relation_object = {
+                "name" : relation["relation"],
+                searching_for : [], 
+                "type": relation["type"],
+                "relationship": relation["relationship_type"],
+            }
+            
+            if searching_for not in feature_object:
+                feature_object[searching_for] = []
+            feature_object[searching_for].append(relation_object)
+            
+            self._search_for_relations(relation_object, relationship_ids, searching_for)
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def heirarchy(self, features, relationships = []):
+        """
+           Returns the hierarchy of a feature (i.e. the parent/child relationship graph), but routed on the feature itself (rather than Gene).
+        """
+        relationships = ropy.server.to_array(relationships)
+        if len(relationships) == 0: 
+            relationships = ["part_of", "derives_from"]
+        relationship_ids = self._get_relationship_ids(relationships)
+        
+        features = ropy.server.to_array(features)
+        
+        results = []
+        for feature in features:
+            feature_object = {
+                "name" : feature, 
+                "parents" : [], 
+                "children" : []
+            }
+            self._search_for_relations(feature_object, relationship_ids, "parents")
+            self._search_for_relations(feature_object, relationship_ids, "children")
+            results.append(feature_object)
+        return {
+            "response" : {
+                "name" : "features/heirarchy", 
+                "heirarchy" : results,
+            }
+        }
+    heirarchy.arguments = { 
+        "features" : "a list of features" ,
+        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
+    }
+    
     @cherrypy.expose
     @ropy.server.service_format()
     def pubs(self, features):
@@ -1333,6 +1396,33 @@ class Regions(BaseController):
         "end" : "the end position in the sequence that you wish to retrieve (counting from 1)"
     }
     
+    
+    
+    
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def locations(self, region, start, end, exclude = []):
+        """
+           Returns a list of features that are located in between the start and end positions of the region.
+        """
+        regionID = self.queries.getFeatureID(region)
+        exclude = ropy.server.to_array(exclude)
+        logger.debug(exclude)
+        locations = self.queries.getFeatureLocations(regionID, start, end, exclude)
+        return {
+            "response" : {
+                "name" : "features/locations", 
+                "region" : region,
+                "features" : locations,
+            }
+        }
+    locations.arguments = { 
+        "region" : "the uniqueName of the region (source feature)" ,
+        "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
+        "end" : "the end position of the features locations that you wish to retrieve (counting from 1)"
+    }
     
     @cherrypy.expose
     @ropy.server.service_format()
