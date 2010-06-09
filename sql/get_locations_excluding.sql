@@ -1,8 +1,8 @@
 SELECT
 	f.uniqueName as feature, 
 	type.name as type, 
-	fl.fmin, 
-	fl.fmax, 
+	fl.fmin as start, 
+	fl.fmax as end,
 	fl.strand,
 	fl.phase,
 	f.is_obsolete,
