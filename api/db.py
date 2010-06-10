@@ -90,6 +90,9 @@ class Queries(QueryProcessor):
 
         return returned
     
+    def getGeneForFeature(self, features):
+        return self.runQueryAndMakeDictionary("get_gene_for_feature", { "features" : tuple(features) })
+    
     def countAllChangedFeaturesForOrganism(self, organism_id, since):
         self.validateDate(since)        
         rows = self.runQuery("count_changed_features_organism", (organism_id, since))

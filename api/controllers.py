@@ -111,6 +111,31 @@ class BaseController(ropy.server.RESTController):
         hash_store = None
         return collection
 
+
+    def _feature_genes(self, features):
+        """
+           Returns the genes associated with features. 
+        """
+        features = self.queries.getGeneForFeature(features)
+        results = {}
+        for feature in features:
+            if feature["f"] not in results:
+                result = {
+                    "type" : feature["ftype"],
+                    "feature" : feature["f"],
+                    "genes" : []
+                }
+                results[feature["f"]] = result
+            
+            # try to find a feature of type gene that is associated with this feature
+            fs = (feature["f"], feature["f2"], feature["f3"])
+            ftypes = (feature["ftype"], feature["ftype2"], feature["ftype3"])
+            for i in range(len(ftypes)):
+                ftype = ftypes[i]
+                if ftype == "gene" or ftype == "pseudogene":
+                    results[feature["f"]]["genes"].append(fs[i])
+        return results.values()
+        
         
 class Histories(BaseController):
     """History related queries"""
@@ -869,7 +894,7 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def heirarchy(self, features, relationships = []):
+    def heirarchy(self, features, root_on_genes = False, relationships = []):
         """
            Returns the hierarchy of a feature (i.e. the parent/child relationship graph), but routed on the feature itself (rather than Gene).
         """
@@ -879,6 +904,16 @@ class Features(BaseController):
         relationship_ids = self._get_relationship_ids(relationships)
         
         features = ropy.server.to_array(features)
+        
+        root_on_genes = ropy.server.to_bool(root_on_genes)
+        if root_on_genes is True:
+            # we want a unique list of genes, so let's build a hash_table and store them as keys, which we can then easily extract
+            _new_features = {}
+            feature_genes = self._feature_genes(features)
+            for feature_gene in feature_genes:
+                for gene in feature_gene["genes"]:
+                    _new_features[gene] = 1
+            features = _new_features.keys()
         
         results = []
         for feature in features:
@@ -900,6 +935,28 @@ class Features(BaseController):
         "features" : "a list of features" ,
         "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
     }
+    
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def genes(self, features):
+        """
+           Returns genes that contain a certain feature.
+        """
+        features = ropy.server.to_array(features)
+        results = self._feature_genes(features)
+        return {
+            "response" : {
+                "name" : "features/genes", 
+                "genes" : results,
+            }
+        }
+        heirarchy.arguments = { 
+            "features" : "a list of features" ,
+            "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
+        }
+        
     
     @cherrypy.expose
     @ropy.server.service_format()
