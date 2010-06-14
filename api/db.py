@@ -401,7 +401,7 @@ class Queries(QueryProcessor):
         
         logger.debug((graph_id, feature_name, graph_name, loid))
         
-        lobj = self.conn.lobject(loid)
+        lobj = self.getConnection().lobject(loid)
         logger.debug(lobj)
         
         logger.debug(lobj.tell())
