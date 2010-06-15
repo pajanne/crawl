@@ -19,7 +19,7 @@ logger = logging.getLogger("crawl")
 import ropy.server
 import db
 
-from userplot.parser.wiggle import Wiggles, Track, WiggleException
+
 
 class BaseController(ropy.server.RESTController):
     """
@@ -1100,6 +1100,9 @@ class Graphs(BaseController):
     """
     
     def _get_graph(self, id):
+        
+        from userplot.parser.wiggle import Wiggles
+        
         if hasattr(self, "graphs") == False:
             self.graphs = {}
         sid = str(id)

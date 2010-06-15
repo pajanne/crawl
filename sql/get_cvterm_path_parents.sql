@@ -1,4 +1,5 @@
 SELECT
+    cvtermpath_id, 
     subject.name as term,
     type.name as relationship,
     cvtermpath.pathdistance as distance,
