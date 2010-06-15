@@ -164,7 +164,7 @@ def execute(path, function, args, database_uri, password):
     result = call_method(api, function, args)
     
     # tidy up
-    api.queries.conn.close()
+    connectionFactory.close()
     
     return ropy.server.Formatter(result).formatJSON()
 
