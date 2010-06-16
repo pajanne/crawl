@@ -12,7 +12,10 @@ SELECT
     fl1.fmax as fmax1, 
     
     fl2.fmin as fmin2, 
-    fl2.fmax as fmax2
+    fl2.fmax as fmax2,
+    
+    fl1.strand as f1strand,
+    fl2.strand as f2strand
 
 FROM feature f1 
 
