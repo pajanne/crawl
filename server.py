@@ -81,7 +81,7 @@ def main():
         logging.config.fileConfig(options.logging)
     
     # make a tree of controller instances
-    root = Root()
+    root = Root("Chado Restful Access Webservice Layer")
     root.genes = api.controllers.Genes()
     root.features = api.controllers.Features();
     root.organisms = api.controllers.Organisms()
