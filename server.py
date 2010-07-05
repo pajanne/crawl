@@ -93,6 +93,9 @@ def main():
         # currently the graph module depends on numpy
         root.graphs = api.controllers.Graphs()
     
+    if sys.platform[:4] == 'java':
+        root.sams = api.controllers.Sams(config.file_store_config)
+    
     if options.test == True:
         root.testing = api.controllers.Testing()
     

@@ -9,6 +9,8 @@ decorated to expose them.
 Created by Giles Velarde on 2010-02-04.
 Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 """
+# this is for jython locking...
+from __future__ import with_statement
 
 import os
 import cherrypy
@@ -18,8 +20,6 @@ logger = logging.getLogger("crawl")
 
 import ropy.server
 import db
-
-
 
 class BaseController(ropy.server.RESTController):
     """
@@ -1752,6 +1752,258 @@ class Organisms(BaseController):
     list.arguments = {}
     
 
+import sys
+if sys.platform[:4] == 'java':
+    
+    import re
+    
+    import net.sf.samtools.SAMFileReader 
+    import net.sf.samtools.SAMRecordIterator
+    import java.io.File
+    
+    # allow locking
+    from threading import Lock 
+    
+    class Sams(BaseController):
+        
+        def __init__(self, file_store_config):
+            super(Sams, self).__init__()
+            
+            self.file_store_path = file_store_config["path"]
+            self.db_mappings = file_store_config["db_mappings"]
+            
+            self.file_store = {}
+            self.file_readers = {}
+            self.counter = 1
+
+            self._recurse_paths(self.file_store_path)
+            logger.info(self.file_store)
+        
+        
+        def _recurse_paths(self, path):
+            logger.info(path)
+            for f in os.listdir(path):
+                f_path = path + "/" + f
+                if os.path.isdir(f_path):
+                    self._recurse_paths(f_path)
+                elif (f.endswith(".bam")):
+                    logger.info ("\t %s" % f_path)
+                    self.file_store[self.counter] = f_path
+                    self.counter+=1
+        
+        def _get_reader(self, fileID):
+            
+            fileID = int(fileID)
+            
+            logger.info(fileID)
+            
+            if fileID in self.file_readers:
+                logger.info("Using existing...")
+                return self.file_readers[fileID]
+            
+            if fileID in self.file_store:
+                logger.info("Making a new reader...")
+                file_path = self.file_store[fileID]
+                file_object = java.io.File(file_path)
+                self.file_readers[fileID] = net.sf.samtools.SAMFileReader(file_object)
+                return self.file_readers[fileID]
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def list(self):
+            """
+               Returns a list of SAM / BAM files in the repository. 
+            """
+            
+            files = []
+            for k,v in self.file_store.items():
+                files.append({ "fileID" : k, "path" : v })
+            
+            data = {
+               "response" : {
+                   "name" : "sams/list",
+                   "files" : files
+               }
+            }
+
+            return data
+
+        list.arguments = {}
+        
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def header(self, fileID):
+            """
+               Returns the header attributes for a particular SAM or BAM in the repository.
+            """
+            
+            attributes = {}
+            
+            file_reader = self._get_reader(fileID)
+            logger.info(file_reader)
+            if file_reader is not None:
+                for entry in file_reader.getFileHeader().getAttributes():
+                    attributes[entry.getKey()] = entry.getValue()
+        
+            data = {
+               "response" : {
+                   "name" : "sams/header",
+                   "attributes" : attributes
+               }
+            }
+        
+            return data
+
+        header.arguments = {"fileID" : "the fileID of the SAM or BAM."}
+        
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def sequences(self, fileID):
+            """
+               Returns the header attributes for a particular SAM or BAM in the repository.
+            """
+            
+            sequences = []
+            
+            file_reader = self._get_reader(fileID)
+            logger.info(file_reader)
+            
+            if file_reader is not None:
+                for samSequenceRecord in file_reader.getFileHeader().getSequenceDictionary().getSequences():
+                    sequences.append({
+                        "length" : samSequenceRecord.getSequenceLength(),
+                        "name" : samSequenceRecord.getSequenceName(),
+                        "index" : samSequenceRecord.getSequenceIndex()
+                    })
+            
+            data = {
+               "response" : {
+                   "name" : "sams/sequences",
+                   "sequences" : sequences
+               }
+            }
+        
+            return data
+
+        sequences.arguments = {"fileID" : "the fileID of the SAM or BAM."}
+        
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def query(self, fileID, sequence, start, end, contained = True):
+            """
+               Returns the header attributes for a particular SAM or BAM in the repository.
+            """
+            
+            file_reader = self._get_reader(fileID)
+            logger.info(file_reader)
+            records = []
+            
+            if file_reader is not None:
+                start = int(start)
+                end = int(end)
+                contained = ropy.server.to_bool(contained)
+                
+                logger.info((fileID, sequence,start,end,contained))
+                
+                
+                lock = Lock()
+                with lock:
+                    samRecordIterator = file_reader.query(sequence, start, end, contained);
+                    logger.info(samRecordIterator)
+                    
+                    while samRecordIterator.hasNext():
+                        record = samRecordIterator.next()
+                        #logger.info(record)
+                        records.append({
+                            "alignmentStart" : record.getAlignmentStart(),
+                            "alignmentEnd" : record.getAlignmentEnd(),
+                            # "mappingQuality" : record.getMappingQuality(),
+                            "readName" : record.getReadName(),
+                            # "readLength" : record.getReadLength(),
+                            "flags" : record.getFlags(),
+                            # "baseQualities" : record.getBaseQualityString(),
+                            # "readBases" : record.getReadString(),
+                            # "flags" : {
+                            #     "readPairedFlag" : record.getReadPairedFlag(),
+                            #     "properPairFlag" : record.getProperPairFlag(),
+                            #     "readUnmappedFlag" : record.getReadUnmappedFlag(),
+                            #     "mateUnmappedFlag" : record.getMateUnmappedFlag(),
+                            #     "readNegativeStrandFlag" : record.getReadNegativeStrandFlag(),
+                            #     "mateNegativeStrandFlag" : record.getMateNegativeStrandFlag(),
+                            #     "firstOfPairFlag" : record.getFirstOfPairFlag(),
+                            #     "secondOfPairFlag" : record.getSecondOfPairFlag(),
+                            #     "notPrimaryAlignmentFlag" : record.getNotPrimaryAlignmentFlag(),
+                            #     "readFailsVendorQualityCheckFlag" : record.getReadFailsVendorQualityCheckFlag(),
+                            #     "duplicateReadFlag" : record.getDuplicateReadFlag()
+                            # }
+                        })
+                
+                    samRecordIterator.close()
+                    logger.info("done")
+            
+            data = {
+               "response" : {
+                   "name" : "sams/query",
+                   "records" : records
+               }
+            }
+            
+            return data
+
+        query.arguments = {
+            "fileID" : "the fileID of the SAM or BAM.",
+            "sequence" : "the name of the sequence",
+            "start" : "the start position",
+            "end" : "the end position",
+            "contained" : "whether the query should be contained"
+        }
+        
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def listfororganism(self, taxonID):
+            """
+               Returns a list of SAM / BAM files for a particular organism.
+            """
+            
+            patterns = []
+            
+            for db_mapping in self.db_mappings:
+                logger.info(db_mapping)
+                logger.info((db_mapping["taxonID"],taxonID))
+                if db_mapping["taxonID"] == taxonID:
+                    patterns.append(db_mapping["folder"])
+            
+            logger.info("Matching patterns")
+            logger.info(patterns)
+            files = []
+            
+            if len(patterns) != 0:
+                for k,v in self.file_store.items():
+                    is_match = False
+                    for pattern in patterns:
+                        logger.info((pattern,v, re.match(pattern, v)))
+                        if re.match(pattern, v):
+                            is_match = True
+                    
+                    if is_match == True:
+                        files.append({ "fileID" : k, "path" : v })
+            
+            return {
+               "response" : {
+                   "name" : "sams/listfororganism",
+                   "files" : files
+               }
+            }
+        
+        listfororganism.arguments = {
+            "taxonID" : "the taxonID of the organism"
+        }
+        
+        
 
 class Testing(BaseController):
     """
