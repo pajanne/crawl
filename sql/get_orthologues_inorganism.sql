@@ -3,6 +3,7 @@ SELECT
     orthof.uniquename as ortho, 
     orthotype.name as orthotype, 
     relationshiptype.name as relationshiptype, 
+    orthoo.common_name as ortho_organism    ,
     -- fcc.name as orthoproduct,
     -- fccc.name as orthoproducttype
     ARRAY (
@@ -23,6 +24,7 @@ JOIN feature_relationship fr ON f.feature_id = fr.subject_id
 JOIN feature orthof ON fr.object_id = orthof.feature_id
 JOIN cvterm orthotype ON orthof.type_id = orthotype.cvterm_id
 JOIN cvterm relationshiptype ON fr.type_id = relationshiptype.cvterm_id
+JOIN organism orthoo ON orthof.organism_id = orthoo.organism_id
 
 -- LEFT JOIN feature_cvterm fc ON fc.feature_id = orthof.feature_id
 -- LEFT JOIN cvterm fcc ON fc.cvterm_id = fcc.cvterm_id 
