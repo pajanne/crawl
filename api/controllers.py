@@ -1899,7 +1899,12 @@ if sys.platform[:4] == 'java':
             
             file_reader = self._get_reader(fileID)
             logger.info(file_reader)
-            records = []
+            records = {
+                "alignmentStart" : [],
+                "alignmentEnd" : [],
+                "flags" : [],
+                "readNames" : [],
+            }
             
             if file_reader is not None:
                 start = int(start)
@@ -1916,11 +1921,11 @@ if sys.platform[:4] == 'java':
                     
                     while samRecordIterator.hasNext():
                         record = samRecordIterator.next()
-                        records.append(
-                            ",".join (
-                                ( str(record.getAlignmentStart()), str(record.getAlignmentEnd()), str(record.getFlags()), record.getReadName() )
-                            )
-                        )
+                        
+                        records["alignmentStart"].append(record.getAlignmentStart())
+                        records["alignmentEnd"].append(record.getAlignmentEnd())
+                        records["flags"].append(record.getFlags())
+                        records["readNames"].append(record.getReadName())
                                                 
                         #logger.info(record)
                         # records.append({
@@ -1953,7 +1958,6 @@ if sys.platform[:4] == 'java':
             data = {
                "response" : {
                    "name" : "sams/query",
-                   "order" : ["alignmentStart", "alignmentEnd", "flags", "readName" ],
                    "records" : records
                }
             }
