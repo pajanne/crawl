@@ -1916,30 +1916,36 @@ if sys.platform[:4] == 'java':
                     
                     while samRecordIterator.hasNext():
                         record = samRecordIterator.next()
+                        records.append(
+                            ",".join (
+                                ( str(record.getAlignmentStart()), str(record.getAlignmentEnd()), str(record.getFlags()), record.getReadName() )
+                            )
+                        )
+                                                
                         #logger.info(record)
-                        records.append({
-                            "alignmentStart" : record.getAlignmentStart(),
-                            "alignmentEnd" : record.getAlignmentEnd(),
-                            # "mappingQuality" : record.getMappingQuality(),
-                            "readName" : record.getReadName(),
-                            # "readLength" : record.getReadLength(),
-                            "flags" : record.getFlags(),
-                            # "baseQualities" : record.getBaseQualityString(),
-                            # "readBases" : record.getReadString(),
-                            # "flags" : {
-                            #     "readPairedFlag" : record.getReadPairedFlag(),
-                            #     "properPairFlag" : record.getProperPairFlag(),
-                            #     "readUnmappedFlag" : record.getReadUnmappedFlag(),
-                            #     "mateUnmappedFlag" : record.getMateUnmappedFlag(),
-                            #     "readNegativeStrandFlag" : record.getReadNegativeStrandFlag(),
-                            #     "mateNegativeStrandFlag" : record.getMateNegativeStrandFlag(),
-                            #     "firstOfPairFlag" : record.getFirstOfPairFlag(),
-                            #     "secondOfPairFlag" : record.getSecondOfPairFlag(),
-                            #     "notPrimaryAlignmentFlag" : record.getNotPrimaryAlignmentFlag(),
-                            #     "readFailsVendorQualityCheckFlag" : record.getReadFailsVendorQualityCheckFlag(),
-                            #     "duplicateReadFlag" : record.getDuplicateReadFlag()
-                            # }
-                        })
+                        # records.append({
+                        #                             "alignmentStart" : record.getAlignmentStart(),
+                        #                             "alignmentEnd" : record.getAlignmentEnd(),
+                        #                             # "mappingQuality" : record.getMappingQuality(),
+                        #                             "readName" : record.getReadName(),
+                        #                             # "readLength" : record.getReadLength(),
+                        #                             "flags" : record.getFlags(),
+                        #                             # "baseQualities" : record.getBaseQualityString(),
+                        #                             # "readBases" : record.getReadString(),
+                        #                             # "flags" : {
+                        #                             #     "readPairedFlag" : record.getReadPairedFlag(),
+                        #                             #     "properPairFlag" : record.getProperPairFlag(),
+                        #                             #     "readUnmappedFlag" : record.getReadUnmappedFlag(),
+                        #                             #     "mateUnmappedFlag" : record.getMateUnmappedFlag(),
+                        #                             #     "readNegativeStrandFlag" : record.getReadNegativeStrandFlag(),
+                        #                             #     "mateNegativeStrandFlag" : record.getMateNegativeStrandFlag(),
+                        #                             #     "firstOfPairFlag" : record.getFirstOfPairFlag(),
+                        #                             #     "secondOfPairFlag" : record.getSecondOfPairFlag(),
+                        #                             #     "notPrimaryAlignmentFlag" : record.getNotPrimaryAlignmentFlag(),
+                        #                             #     "readFailsVendorQualityCheckFlag" : record.getReadFailsVendorQualityCheckFlag(),
+                        #                             #     "duplicateReadFlag" : record.getDuplicateReadFlag()
+                        #                             # }
+                        #                         })
                 
                     samRecordIterator.close()
                     logger.info("done")
@@ -1947,6 +1953,7 @@ if sys.platform[:4] == 'java':
             data = {
                "response" : {
                    "name" : "sams/query",
+                   "order" : ["alignmentStart", "alignmentEnd", "flags", "readName" ],
                    "records" : records
                }
             }
