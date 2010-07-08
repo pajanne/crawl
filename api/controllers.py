@@ -1894,6 +1894,58 @@ if sys.platform[:4] == 'java':
 
         sequences.arguments = {"fileID" : "the fileID of the SAM or BAM."}
         
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def coverage(self, fileID, sequence, start, end, step, display_coordinates = False):
+            """
+               Computes the coverage count for a range, windowed in steps.
+            """
+            file_reader = self._get_reader(fileID)
+            
+            start = int(start)
+            end = int(end)
+            step = int(step)
+            
+            display_coordinates = ropy.server.to_bool(display_coordinates)
+            
+            starts = []
+            ends = []
+            counts = []
+            
+            if file_reader is not None:
+                for i in range(start, end, step):
+                    starts.append(i)
+                    ends.append(i+step)
+                    count = 0
+                    lock = Lock()
+                    with lock:
+                        samRecordIterator = file_reader.query(sequence, i, i+step, False)
+                        while samRecordIterator.hasNext():
+                            record = samRecordIterator.next()
+                            count += 1
+                        samRecordIterator.close()
+                        counts.append(count)
+            data = {
+               "response" : {
+                   "name" : "sams/coverage",
+                   "coverage" : {
+                        "counts": counts
+                   }
+               }
+            }
+            if display_coordinates is True:
+                data["response"]["coverage"]["starts"] = starts
+                data["response"]["coverage"]["ends"] = ends
+            return data
+        coverage.arguments = {
+            "fileID" : "the fileID of the SAM or BAM.",
+            "sequence" : "the name of the sequence",
+            "start" : "the start position",
+            "end" : "the end position",
+            "step" : "the step size",
+            "display_coordinates" : "if true, will return coordinates as well",
+        }
+    
         
         @cherrypy.expose
         @ropy.server.service_format()
