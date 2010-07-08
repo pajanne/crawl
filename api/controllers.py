@@ -1762,8 +1762,9 @@ class Organisms(BaseController):
 import sys
 if sys.platform[:4] == 'java':
     
-    import net.sf.samtools.SAMFileReader 
-    import net.sf.samtools.SAMRecordIterator
+    import net.sf.samtools.SAMFileReader as SAMFileReader
+    # import net.sf.samtools.SAMRecordIterator as SAMRecordIterator
+    import net.sf.samtools.SAMRecord as SAMRecord
     import java.io.File
     
     # allow locking
@@ -1810,7 +1811,7 @@ if sys.platform[:4] == 'java':
                 logger.info("Making a new reader...")
                 file_path = self.file_store[fileID]
                 file_object = java.io.File(file_path)
-                self.file_readers[fileID] = net.sf.samtools.SAMFileReader(file_object)
+                self.file_readers[fileID] = SAMFileReader(file_object)
                 return self.file_readers[fileID]
         
         @cherrypy.expose
@@ -1896,7 +1897,7 @@ if sys.platform[:4] == 'java':
         
         @cherrypy.expose
         @ropy.server.service_format()
-        def coverage(self, fileID, sequence, start, end, step, display_coordinates = False):
+        def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
             """
                Computes the coverage count for a range, windowed in steps.
             """
@@ -1904,38 +1905,101 @@ if sys.platform[:4] == 'java':
             
             start = int(start)
             end = int(end)
-            step = int(step)
+            window = int(window)
             
-            display_coordinates = ropy.server.to_bool(display_coordinates)
+            coverage = {}
+            max_count = 0
             
-            starts = []
-            ends = []
-            counts = []
+            n_bins = len(range(start, end, window))
             
             if file_reader is not None:
-                for i in range(start, end, step):
-                    starts.append(i)
-                    ends.append(i+step)
-                    count = 0
-                    lock = Lock()
-                    with lock:
-                        samRecordIterator = file_reader.query(sequence, i, i+step, False)
+                
+                samRecordIterator = None
+                
+                lock = Lock()
+                with lock:
+                    try:
+                        samRecordIterator = file_reader.query(sequence, start, end, False)
                         while samRecordIterator.hasNext():
                             record = samRecordIterator.next()
-                            count += 1
+                            #logger.info(record)
+                            blocks = record.getAlignmentBlocks()
+                            for block in blocks:
+                                for k in range(0, block.getLength()):
+                                    
+                                    pos = int( block.getReferenceStart() + k )
+                                    
+                                    # logger.info("pos" + str(pos))
+                                    
+                                    bin = int(pos / window)
+                                    
+                                    #logger.info("bin" + str(bin))
+                                    
+                                    if ((bin < 0) or (bin > n_bins-1)):
+                                        continue
+                                    
+                                    #logger.info("...")
+                                    
+                                    if bin not in coverage:
+                                        coverage[bin] = 0
+                                    
+                                    coverage[bin]+=1
+                                    if(coverage[bin] > max_count):
+                                        max_count = coverage[bin]
+                            
+                            
                         samRecordIterator.close()
-                        counts.append(count)
+                    except Exception, e:
+                        if samRecordIterator is not None:
+                            samRecordIterator.close()
+                        logger.error(e)
+                        raise ropy.server.ServerException("Could not parse the file. Error was : '%s'. " % str(e), ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
+                    
+                
+                sorted_coverages = []
+                
+                coverage_keys = coverage.keys()
+                coverage_keys.sort()
+                
+                for key in coverage_keys:
+                    sorted_coverages.append(coverage[key])
+                
+                # for i in range(start, end, step):
+                #                     starts.append(i)
+                #                     ends.append(i+step)
+                #                     count = 0
+                #                     lock = Lock()
+                #                     with lock:
+                #                         samRecordIterator = file_reader.query(sequence, i, i+step, False)
+                #                         
+                #                             record = samRecordIterator.next()
+                #                             
+                #                             alignment_blocks = record.getAlignmentBlocks()
+                #                             for block in alignment_blocks:
+                #                                 
+                #                             
+                #                             
+                #                             count += 1
+                #                         samRecordIterator.close()
+                #                         
+                #                         if count > max_count:
+                #                             max_count = count
+                #                         
+                #                         counts.append(count)
+                #                     
+                    
+                    
             data = {
                "response" : {
                    "name" : "sams/coverage",
-                   "coverage" : {
-                        "counts": counts
-                   }
+                   "coverage" : sorted_coverages,
+                   "max_count" : max_count,
+                   "n_bins" : len(sorted_coverages)
                }
             }
-            if display_coordinates is True:
-                data["response"]["coverage"]["starts"] = starts
-                data["response"]["coverage"]["ends"] = ends
+            # if display_coordinates is True:
+            #                 data["response"]["coverage"]["starts"] = starts
+            #                 data["response"]["coverage"]["ends"] = ends
             return data
         coverage.arguments = {
             "fileID" : "the fileID of the SAM or BAM.",
@@ -1943,13 +2007,13 @@ if sys.platform[:4] == 'java':
             "start" : "the start position",
             "end" : "the end position",
             "step" : "the step size",
-            "display_coordinates" : "if true, will return coordinates as well",
+            #"display_coordinates" : "if true, will return coordinates as well",
         }
     
         
         @cherrypy.expose
         @ropy.server.service_format()
-        def query(self, fileID, sequence, start, end, contained = True):
+        def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"]):
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
             """
@@ -1963,6 +2027,26 @@ if sys.platform[:4] == 'java':
                 "readNames" : [],
             }
             
+            properties = ropy.server.to_array(properties)
+            
+            logger.info(dir(SAMRecord))
+            
+            filter_props = {}
+            
+            for sam_record_prop in dir(SAMRecord):
+                if sam_record_prop.startswith("get"):
+                    sam_record_prop_name = sam_record_prop[3:]
+                    first_char = sam_record_prop_name[0].lower()
+                    sam_record_prop_name_concat =  first_char + sam_record_prop_name[1:]
+                    logger.info(sam_record_prop_name_concat)
+                    if sam_record_prop_name_concat in properties:
+                        filter_props[sam_record_prop_name_concat] = sam_record_prop
+            
+            logger.info(filter_props)
+            
+            for filter_prop_method,filter_prop_name in filter_props.items():
+                records[filter_prop_method] = []
+            
             if file_reader is not None:
                 start = int(start)
                 end = int(end)
@@ -1970,51 +2054,65 @@ if sys.platform[:4] == 'java':
                 
                 logger.info((fileID, sequence,start,end,contained))
                 
+                samRecordIterator = None
                 
                 lock = Lock()
                 with lock:
-                    samRecordIterator = file_reader.query(sequence, start, end, contained);
-                    logger.info(samRecordIterator)
+                    try:
+                        
+                        samRecordIterator = file_reader.query(sequence, start, end, contained);
+                        logger.info(samRecordIterator)
                     
-                    while samRecordIterator.hasNext():
-                        record = samRecordIterator.next()
+                        while samRecordIterator.hasNext():
+                            record = samRecordIterator.next()
                         
-                        if record.getReadUnmappedFlag():
-                            continue
+                            if record.getReadUnmappedFlag():
+                                continue
                         
-                        records["alignmentStart"].append(record.getAlignmentStart())
-                        records["alignmentEnd"].append(record.getAlignmentEnd())
-                        records["flags"].append(record.getFlags())
-                        records["readNames"].append(record.getReadName())
+                            for filter_prop_method,filter_prop_name in filter_props.items():
+                                logger.info((filter_prop_method,filter_prop_name))
+                            
+                                returned = getattr(record, filter_prop_name).__call__()
+                                records[filter_prop_method].append(returned)
+                        
+                        
+                            # records["alignmentStart"].append(record.getAlignmentStart())
+                            #                         records["alignmentEnd"].append(record.getAlignmentEnd())
+                            #                         records["flags"].append(record.getFlags())
+                            #                         records["readNames"].append(record.getReadName())
                                                 
-                        #logger.info(record)
-                        # records.append({
-                        #                             "alignmentStart" : record.getAlignmentStart(),
-                        #                             "alignmentEnd" : record.getAlignmentEnd(),
-                        #                             # "mappingQuality" : record.getMappingQuality(),
-                        #                             "readName" : record.getReadName(),
-                        #                             # "readLength" : record.getReadLength(),
-                        #                             "flags" : record.getFlags(),
-                        #                             # "baseQualities" : record.getBaseQualityString(),
-                        #                             # "readBases" : record.getReadString(),
-                        #                             # "flags" : {
-                        #                             #     "readPairedFlag" : record.getReadPairedFlag(),
-                        #                             #     "properPairFlag" : record.getProperPairFlag(),
-                        #                             #     "readUnmappedFlag" : record.getReadUnmappedFlag(),
-                        #                             #     "mateUnmappedFlag" : record.getMateUnmappedFlag(),
-                        #                             #     "readNegativeStrandFlag" : record.getReadNegativeStrandFlag(),
-                        #                             #     "mateNegativeStrandFlag" : record.getMateNegativeStrandFlag(),
-                        #                             #     "firstOfPairFlag" : record.getFirstOfPairFlag(),
-                        #                             #     "secondOfPairFlag" : record.getSecondOfPairFlag(),
-                        #                             #     "notPrimaryAlignmentFlag" : record.getNotPrimaryAlignmentFlag(),
-                        #                             #     "readFailsVendorQualityCheckFlag" : record.getReadFailsVendorQualityCheckFlag(),
-                        #                             #     "duplicateReadFlag" : record.getDuplicateReadFlag()
-                        #                             # }
-                        #                         })
-                
-                    samRecordIterator.close()
-                    logger.info("done")
-            
+                            #logger.info(record)
+                            # records.append({
+                            #                             "alignmentStart" : record.getAlignmentStart(),
+                            #                             "alignmentEnd" : record.getAlignmentEnd(),
+                            #                             # "mappingQuality" : record.getMappingQuality(),
+                            #                             "readName" : record.getReadName(),
+                            #                             # "readLength" : record.getReadLength(),
+                            #                             "flags" : record.getFlags(),
+                            #                             # "baseQualities" : record.getBaseQualityString(),
+                            #                             # "readBases" : record.getReadString(),
+                            #                             # "flags" : {
+                            #                             #     "readPairedFlag" : record.getReadPairedFlag(),
+                            #                             #     "properPairFlag" : record.getProperPairFlag(),
+                            #                             #     "readUnmappedFlag" : record.getReadUnmappedFlag(),
+                            #                             #     "mateUnmappedFlag" : record.getMateUnmappedFlag(),
+                            #                             #     "readNegativeStrandFlag" : record.getReadNegativeStrandFlag(),
+                            #                             #     "mateNegativeStrandFlag" : record.getMateNegativeStrandFlag(),
+                            #                             #     "firstOfPairFlag" : record.getFirstOfPairFlag(),
+                            #                             #     "secondOfPairFlag" : record.getSecondOfPairFlag(),
+                            #                             #     "notPrimaryAlignmentFlag" : record.getNotPrimaryAlignmentFlag(),
+                            #                             #     "readFailsVendorQualityCheckFlag" : record.getReadFailsVendorQualityCheckFlag(),
+                            #                             #     "duplicateReadFlag" : record.getDuplicateReadFlag()
+                            #                             # }
+                            #                         })
+                        
+                        samRecordIterator.close()
+                        logger.info("done")
+                    except Exception, e:
+                        samRecordIterator.close()
+                        logger.error(e)
+                        raise ropy.server.ServerException("Could not parse the file. Error was : '%s'. " % str(e), ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
+                    
             data = {
                "response" : {
                    "name" : "sams/query",
