@@ -2020,12 +2020,7 @@ if sys.platform[:4] == 'java':
             
             file_reader = self._get_reader(fileID)
             logger.info(file_reader)
-            records = {
-                "alignmentStart" : [],
-                "alignmentEnd" : [],
-                "flags" : [],
-                "readNames" : [],
-            }
+            records = {}
             
             properties = ropy.server.to_array(properties)
             
