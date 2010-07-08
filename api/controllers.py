@@ -1927,7 +1927,7 @@ if sys.platform[:4] == 'java':
                     while samRecordIterator.hasNext():
                         record = samRecordIterator.next()
                         
-                        if record.getMateUnmappedFlag():
+                        if record.getReadUnmappedFlag():
                             continue
                         
                         records["alignmentStart"].append(record.getAlignmentStart())
