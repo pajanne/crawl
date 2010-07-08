@@ -15,6 +15,7 @@ from __future__ import with_statement
 import os
 import cherrypy
 import logging
+import re
 
 logger = logging.getLogger("crawl")
 
@@ -142,7 +143,7 @@ class Histories(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format("history_annotations")
-    def annotation_changes(self, taxonomyID, since):
+    def annotation_changes(self, taxonomyID, since, regex = None):
         """Returns a list of genes that have been detected to have annotation changes."""
         
         organism_id = self.queries.getOrganismFromTaxon(taxonomyID)
@@ -152,6 +153,7 @@ class Histories(BaseController):
         qualifier_type_id = cvterm_infos[0]["id"]
         curatorName_type_id = cvterm_infos[1]["id"]
         date_type_id = cvterm_infos[2]["id"]
+        
 
         rows = self.queries.getGenesWithHistoryChangesAnywhere(organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id)
         
@@ -159,6 +161,10 @@ class Histories(BaseController):
         
         results = []
         for row in rows:
+            
+            if regex is not None:
+                if not re.match(regex, row["changedetail"]):
+                    continue
             
             result = {
                 "type" : row["type"],
@@ -197,7 +203,8 @@ class Histories(BaseController):
     
     annotation_changes.arguments = { 
         "since" : "date formatted as YYYY-MM-DD", 
-        "taxonomyID" : "the NCBI taxonomy ID" 
+        "taxonomyID" : "the NCBI taxonomy ID",
+        "regex" : "a regex filter on the value returned" 
     }
         
     
@@ -1754,8 +1761,6 @@ class Organisms(BaseController):
 
 import sys
 if sys.platform[:4] == 'java':
-    
-    import re
     
     import net.sf.samtools.SAMFileReader 
     import net.sf.samtools.SAMRecordIterator
