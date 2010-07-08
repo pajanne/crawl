@@ -163,7 +163,7 @@ class Histories(BaseController):
         for row in rows:
             
             if regex is not None:
-                if not re.match(regex, row["changedetail"]):
+                if not re.search(regex, row["changedetail"]):
                     continue
             
             result = {
@@ -2154,8 +2154,8 @@ if sys.platform[:4] == 'java':
                 for k,v in self.file_store.items():
                     is_match = False
                     for pattern in patterns:
-                        logger.info((pattern,v, re.match(pattern, v)))
-                        if re.match(pattern, v):
+                        logger.info((pattern,v, re.search(pattern, v)))
+                        if re.search(pattern, v):
                             is_match = True
                     
                     if is_match == True:
