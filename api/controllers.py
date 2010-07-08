@@ -2070,7 +2070,7 @@ if sys.platform[:4] == 'java':
                                 continue
                         
                             for filter_prop_method,filter_prop_name in filter_props.items():
-                                logger.info((filter_prop_method,filter_prop_name))
+                                # logger.info((filter_prop_method,filter_prop_name))
                             
                                 returned = getattr(record, filter_prop_name).__call__()
                                 records[filter_prop_method].append(returned)
