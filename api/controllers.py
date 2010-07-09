@@ -1910,7 +1910,14 @@ if sys.platform[:4] == 'java':
             coverage = {}
             max_count = 0
             
-            n_bins = len(range(start, end, window))
+            logger.info("binning")
+            bins = range(start, end, window)
+            for b in bins:
+            	coverage[int(b/window)] = 0
+            n_bins = len(bins)
+            
+            
+            
             
             if file_reader is not None:
                 
@@ -1919,34 +1926,29 @@ if sys.platform[:4] == 'java':
                 lock = Lock()
                 with lock:
                     try:
+                        logger.info("querying")
                         samRecordIterator = file_reader.query(sequence, start, end, False)
+                        logger.info("looping")
                         while samRecordIterator.hasNext():
                             record = samRecordIterator.next()
-                            #logger.info(record)
                             blocks = record.getAlignmentBlocks()
                             for block in blocks:
                                 for k in range(0, block.getLength()):
                                     
                                     pos = int( block.getReferenceStart() + k )
                                     
-                                    # logger.info("pos" + str(pos))
-                                    
                                     bin = int(pos / window)
-                                    
-                                    #logger.info("bin" + str(bin))
                                     
                                     if ((bin < 0) or (bin > n_bins-1)):
                                         continue
                                     
-                                    #logger.info("...")
-                                    
-                                    if bin not in coverage:
-                                        coverage[bin] = 0
+                                    # should not be necessary, as we're prefilling this now...
+                                    # if bin not in coverage:
+                                    #   coverage[bin] = 0
                                     
                                     coverage[bin]+=1
                                     if(coverage[bin] > max_count):
                                         max_count = coverage[bin]
-                            
                             
                         samRecordIterator.close()
                     except Exception, e:
@@ -1956,50 +1958,27 @@ if sys.platform[:4] == 'java':
                         raise ropy.server.ServerException("Could not parse the file. Error was : '%s'. " % str(e), ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
                     
                 
-                sorted_coverages = []
+                logger.info("sorting")
+                
+                sorted_coverage = []
                 
                 coverage_keys = coverage.keys()
                 coverage_keys.sort()
                 
                 for key in coverage_keys:
-                    sorted_coverages.append(coverage[key])
+                    sorted_coverage.append(coverage[key])
                 
-                # for i in range(start, end, step):
-                #                     starts.append(i)
-                #                     ends.append(i+step)
-                #                     count = 0
-                #                     lock = Lock()
-                #                     with lock:
-                #                         samRecordIterator = file_reader.query(sequence, i, i+step, False)
-                #                         
-                #                             record = samRecordIterator.next()
-                #                             
-                #                             alignment_blocks = record.getAlignmentBlocks()
-                #                             for block in alignment_blocks:
-                #                                 
-                #                             
-                #                             
-                #                             count += 1
-                #                         samRecordIterator.close()
-                #                         
-                #                         if count > max_count:
-                #                             max_count = count
-                #                         
-                #                         counts.append(count)
-                #                     
-                    
+                logger.info("sorted")
+                
                     
             data = {
                "response" : {
                    "name" : "sams/coverage",
-                   "coverage" : sorted_coverages,
+                   "coverage" : sorted_coverage,
                    "max_count" : max_count,
-                   "n_bins" : len(sorted_coverages)
+                   "n_bins" : len(sorted_coverage)
                }
             }
-            # if display_coordinates is True:
-            #                 data["response"]["coverage"]["starts"] = starts
-            #                 data["response"]["coverage"]["ends"] = ends
             return data
         coverage.arguments = {
             "fileID" : "the fileID of the SAM or BAM.",
