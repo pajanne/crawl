@@ -1827,6 +1827,7 @@ if sys.platform[:4] == 'java':
         
         
         def _recurse_paths(self, path):
+            print path
             logger.info(path)
             for f in os.listdir(path):
                 f_path = path + "/" + f
