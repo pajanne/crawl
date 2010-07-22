@@ -208,9 +208,39 @@ class Queries(QueryProcessor):
         except QueryProcessorException, qpe:
             raise ServerException(qpe.value, ERROR_CODES["DATA_NOT_FOUND"])
     
-    def getOrganismProp(self, organism_ids, cvterm_name, cv_name):
-        return self.runQueryAndMakeDictionary("get_organism_prop", { "organism_ids" : tuple(organism_ids), "cvterm_name" : cvterm_name, "cv_name" : cv_name  } )
+    def getOrganismProp(self, organism_id, cv, cvterm):
+        query_string = self.getQuery("get_organism_prop")
+        
+        args = {
+            "organism_id" : organism_id
+        }
+        
+        if cv is not None and len(cv) > 0:
+            query_string += " AND cv.name = %(cv)s "
+            args["cv"] = cv
+        
+        if cvterm is not None and len(cvterm) > 0:
+            query_string += " AND cvterm.name = %(cvterm)s "
+            args["cvterm"] = cvterm
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
     
+    def getOrganismIDFromCommonName(self, common_name):
+        result = self.runQueryStringAndMakeDictionary(
+            "SELECT organism_id FROM organism WHERE organism.common_name = %(common_name)s", 
+            {"common_name" : common_name})
+        if len(result) > 0:
+            return result[0]["organism_id"]
+        raise ServerException("Could not find organism with common_name " + common_name, ERROR_CODES["DATA_NOT_FOUND"])
+    
+    def getOrganismIDFromOrganismID(self, organism_id):
+        result = self.runQueryStringAndMakeDictionary(
+            "SELECT organism_id FROM organism WHERE organism.organism_id = %(organism_id)s", 
+            {"organism_id" : organism_id})
+        if len(result) > 0:
+            return result[0]["organism_id"]
+        raise ServerException("Could not find organism with organism_id " + organism_id, ERROR_CODES["DATA_NOT_FOUND"])
+        
     def getGenes(self, region):
         return self.runQueryAndMakeDictionary("get_genes", {"region" : region } )
     

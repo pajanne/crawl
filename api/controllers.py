@@ -136,17 +136,34 @@ class BaseController(ropy.server.RESTController):
                 if ftype == "gene" or ftype == "pseudogene":
                     results[feature["f"]]["genes"].append(fs[i])
         return results.values()
-        
-        
+    
+    
+    def getOrganismID(self, organism):
+        """
+           A utility for getting an organism ID from a taxonID or an organismID or a common name. If no prefix
+           is supplied, then it assumes a taxon.
+        """
+        if organism.find("org:") > -1:
+            organism_id = self.queries.getOrganismIDFromOrganismID(organism[4:])
+        elif organism.find("tax:") > -1:
+            organism_id = self.queries.getOrganismFromTaxon(organism[4:])
+        elif organism.find("com:") > -1:
+            organism_id = self.queries.getOrganismIDFromCommonName(organism[4:])
+        else:
+            organism_id = self.queries.getOrganismFromTaxon(organism)
+        logger.info((organism, int(organism_id)))
+        return int(organism_id) 
+    
+    
 class Histories(BaseController):
     """History related queries"""
     
     @cherrypy.expose
     @ropy.server.service_format("history_annotations")
-    def annotation_changes(self, taxonomyID, since, regex = None):
+    def annotation_changes(self, taxonID, since, regex = None):
         """Returns a list of genes that have been detected to have annotation changes."""
         
-        organism_id = self.queries.getOrganismFromTaxon(taxonomyID)
+        organism_id = self.getOrganismID(taxonID)
         
         cvterm_infos = self._getHistoryCvtermPropTypeIDs()
 
@@ -154,7 +171,6 @@ class Histories(BaseController):
         curatorName_type_id = cvterm_infos[1]["id"]
         date_type_id = cvterm_infos[2]["id"]
         
-
         rows = self.queries.getGenesWithHistoryChangesAnywhere(organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id)
         
         serving = ropy.server.serving
@@ -192,7 +208,7 @@ class Histories(BaseController):
         data = {
             "response" : {
                 "name" : "genes/annotation_changes",
-                "taxonomyID" : taxonomyID,
+                "organism" : organism,
                 "count" : len(results),
                 "since" : since,
                 "results" : results
@@ -203,7 +219,7 @@ class Histories(BaseController):
     
     annotation_changes.arguments = { 
         "since" : "date formatted as YYYY-MM-DD", 
-        "taxonomyID" : "the NCBI taxonomy ID",
+        "taxonID" : "the taxonID of an organism",
         "regex" : "a regex filter on the value returned" 
     }
         
@@ -216,11 +232,11 @@ class Genes(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def inorganism(self, taxonID):
+    def inorganism(self, organism):
         """
             Returns a list of genes in an organism.
         """
-        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        organism_id = self.getOrganismID(organism)
         results = self.queries.getCDSs(organism_id)
         data = {
             "response" : {
@@ -341,7 +357,7 @@ class Genes(BaseController):
         """
             Reports all the features that have changed since a certain date.
         """
-        organism_id = self.queries.getOrganismFromTaxon(taxonomyID)
+        organism_id = self.getOrganismID(taxonomyID)
         changed_features = self.queries.getAllChangedFeaturesForOrganism(since, organism_id)
         data = {
             "response" : {
@@ -366,7 +382,7 @@ class Genes(BaseController):
         """
             Reports all the genes that have been highlighted as having annotation changes.
         """
-        organism_id = self.queries.getOrganismFromTaxon(taxonomyID)
+        organism_id = self.getOrganismID(taxonomyID)
         # print organism_id
         rows = self.queries.getGenesWithPrivateAnnotationChanges(organism_id, since)
         
@@ -589,11 +605,11 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def orthologuesinorganism(self, taxonID):
+    def orthologuesinorganism(self, organism):
         """
            Gets all the orthologues in an organism.
         """
-        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        organism_id = self.getOrganismID(organism)
         results = self.queries.getOrthologuesInOrganism(organism_id)
         return ({
             "response" : {
@@ -602,7 +618,7 @@ class Features(BaseController):
             }
         })
     orthologuesinorganism.arguments = {
-        "taxonID" : "the organism's taxonID"
+        "organism" : "the organism"
     }
     
     @cherrypy.expose
@@ -728,10 +744,10 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def withterm(self, term, controlled_vocabulary, taxonID = None):
+    def withterm(self, term, controlled_vocabulary, organism = None):
         
         organism_id = None
-        if taxonID is not None: organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        if organism is not None: organism_id = self.getOrganismID(organism)
         
         results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary, organism_id)
             
@@ -1383,12 +1399,12 @@ class Terms(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def inorganism(self, vocabularies, taxonID):
+    def inorganism(self, vocabularies, organism):
         """
            Returns terms in an organism.
         """
         vocabularies = ropy.server.to_array(vocabularies)
-        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        organism_id = self.getOrganismID(organism)
         
         terms = self.queries.getTermsInOrganism(vocabularies, organism_id)
         
@@ -1401,7 +1417,7 @@ class Terms(BaseController):
         }
     inorganism.arguments = {
         "vocabularies" : "the controlled vocabularies you want to extract terms from",
-        "taxonID" : "the taxonID"
+        "organism" : "the organism"
     }
     
     @cherrypy.expose
@@ -1655,15 +1671,15 @@ class Regions(BaseController):
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
         "end" : "the end position of the features locations that you wish to retrieve (counting from 1)"
     }
-        
+    
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def inorganism(self, taxonID):
+    def inorganism(self, organism):
         """
             Returns a list of top level regions for an organism (e.g. chromosomes, contigs etc.).
         """
-        organism_id = self.queries.getOrganismFromTaxon(taxonID)
+        organism_id = self.getOrganismID(organism)
         results = self.queries.getTopLevel(organism_id)
         
         data = {
@@ -1677,7 +1693,7 @@ class Regions(BaseController):
         return data
     
     inorganism.arguments = {
-        "taxonID" : "the taxonID of the organism you want to browse"
+        "organism" : "the organism"
     }
     
     
@@ -1744,19 +1760,43 @@ class Organisms(BaseController):
         """
             Lists all organisms and their taxonomyIDs. 
         """
-        # logger.debug("?")
         organism_list = self.queries.getAllOrganismsAndTaxonIDs()
-        # logger.debug(organism_list)
+        for org in organism_list:
+            translation_table = self.queries.getOrganismProp(org["organism_id"], "genedb_misc", "translationTable")
+            if len(translation_table) > 0:
+                org["translation_table"] = translation_table[0]["value"]
         data = {
             "response" : {
                 "name" : "organisms/list",
                 "organisms" : organism_list
             }
         }
-        logger.debug("?")
         return data
     
     list.arguments = {}
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def properties(self, organism, vocabulary = None, term = None):
+        """
+            Lists properties for an organism, with the option of restricting on the controlled vocbulary term.
+        """
+        organism_id = self.getOrganismID(organism)
+        results = self.queries.getOrganismProp(organism_id, vocabulary, term)
+        data = {
+            "response" : {
+                "name" : "organisms/properties",
+                "properties" : self._sql_results_to_collection("common_name", "property", results)
+            }
+        }
+        return data
+    
+    properties.arguments = {
+        "organism" : "the organism",
+        "vocabulary" : "the cv name (optional)",
+        "term" : "the cv term (optional)"
+    }
     
 
 import sys
@@ -2107,17 +2147,19 @@ if sys.platform[:4] == 'java':
         
         @cherrypy.expose
         @ropy.server.service_format()
-        def listfororganism(self, taxonID):
+        def listfororganism(self, organism):
             """
                Returns a list of SAM / BAM files for a particular organism.
             """
             
             patterns = []
             
+            organism_id = self.getOrganismID(organism)
+            
             for db_mapping in self.db_mappings:
                 logger.info(db_mapping)
-                logger.info((db_mapping["taxonID"],taxonID))
-                if db_mapping["taxonID"] == taxonID:
+                logger.info((int(db_mapping["organismID"]),organism_id))
+                if int(db_mapping["organismID"]) == organism_id:
                     patterns.append(db_mapping["folder"])
             
             logger.info("Matching patterns")
@@ -2143,7 +2185,7 @@ if sys.platform[:4] == 'java':
             }
         
         listfororganism.arguments = {
-            "taxonID" : "the taxonID of the organism"
+            "organism" : "the organism"
         }
         
         

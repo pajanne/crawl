@@ -19,21 +19,18 @@ file_store_config = {
             "folder" : "^\S+MRSA252\S+",
             "name" : "Staphylococcus aureus (MRSA252)",
             "organismID" : "65", 
-            "taxonID" : "282458",
             "chromosomes" : "*"
         },
         {
             "folder" : "^\S+B_bronchiseptica_RB50\S+",
             "name" : "Bordetella bronchiseptica",
             "organismID" : "49", 
-            "taxonID" : "518",
             "chromosomes" : "*"
         },
         {
             "folder" : "^\S+S_Typhimurium_D23580\S+",
             "name" : "Salmonella typhimurium",
             "organismID" : "165", 
-            "taxonID" : "568708",
             "chromosomes" : "*"
         }
     ]
