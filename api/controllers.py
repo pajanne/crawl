@@ -208,7 +208,7 @@ class Histories(BaseController):
         data = {
             "response" : {
                 "name" : "genes/annotation_changes",
-                "organism" : organism,
+                "taxonID" : taxonID,
                 "count" : len(results),
                 "since" : since,
                 "results" : results
