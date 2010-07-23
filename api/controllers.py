@@ -1685,7 +1685,7 @@ class Regions(BaseController):
         data = {
            "response" : {
                "name" : "regions/inorganism",
-               "taxonId" : taxonID,
+               "organism" : organism,
                "regions" : results
            }
         }
