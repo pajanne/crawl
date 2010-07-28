@@ -1972,7 +1972,10 @@ if sys.platform[:4] == 'java':
             
             max_count = 0
             
-            n_bins = Math.round((end-start+1)/window);
+            n_bins = Math.round((end-start+1)/window)
+            
+            logger.info((start,end,window,end-start+1,(end-start+1)/window,n_bins))
+            
             coverage = array.zeros('i', n_bins)
             
             if file_reader is not None:
@@ -1990,11 +1993,18 @@ if sys.platform[:4] == 'java':
                             for block in blocks:
                                 for k in range(0, block.getLength()):
                                     
-                                    pos = block.getReferenceStart() + k 
+                                    pos = block.getReferenceStart() + k - start
                                     bin = Math.round(pos / window)
+                                    
+                                    
+                                    #if record.getReadName() == "IL6_4415:2:54:17521:5107#11":
+                                    #    logger.info(record.getReadName() + " " + str(record.getAlignmentStart()) + " " + str(pos) + " " +  str(bin) + " = " + str(k) + " " + str(window)  + " "+ str(bin < 0) + " " + str(bin > n_bins-1) )
+                                    
                                     
                                     if ((bin < 0) or (bin > n_bins-1)):
                                         continue
+                                    
+                                    
                                     
                                     coverage[bin]+=1
                                     if(coverage[bin] > max_count):
