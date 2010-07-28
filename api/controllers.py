@@ -962,8 +962,8 @@ class Features(BaseController):
             results.append(feature_object)
         return {
             "response" : {
-                "name" : "features/heirarchy", 
-                "heirarchy" : results,
+                "name" : "features/hierarchy", 
+                "hierarchy" : results,
             }
         }
     hierarchy.arguments = { 
