@@ -1,0 +1,1 @@
+SELECT f.uniquename, f.name FROM feature f WHERE f.uniquename in %(uniquenames)s

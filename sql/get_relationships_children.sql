@@ -1,7 +1,8 @@
 SELECT
 
 target.uniquename as feature,
-child.uniquename as relation,
+child.uniquename as uniquename,
+child.name as name,
 'child' as relationship,
 relationship_type.name as relationship_type,
 type.name as type

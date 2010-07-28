@@ -336,6 +336,9 @@ class Queries(QueryProcessor):
             "relationships" : tuple(relationships)
         })
     
+    def getFeatureNameFromUniqueNames(self, uniquenames):
+        return self.runQueryAndMakeDictionary("get_feature_name_from_uniquename", {"uniquenames" : tuple(uniquenames)})
+    
     def getFeaturePub(self, features):
         return self.runQueryAndMakeDictionary("get_feature_pubs", {
             "features" : tuple(features)

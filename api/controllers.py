@@ -891,7 +891,7 @@ class Features(BaseController):
         """
            A recursive trawl up or down feature relationships. Can go up (parents) or down (children).
         """
-        uniquename = feature_object["name"]
+        uniquename = feature_object["uniquename"]
         
         if searching_for == "parents":
             relations = self.queries.getRelationshipsParents([uniquename], relationship_ids)
@@ -902,11 +902,14 @@ class Features(BaseController):
         
         for relation in relations:
             relation_object = {
-                "name" : relation["relation"],
+                "uniquename" : relation["uniquename"],
                 searching_for : [], 
                 "type": relation["type"],
                 "relationship": relation["relationship_type"],
             }
+            
+            if relation["name"] != "None":
+                relation_object["name"] = relation["name"]
             
             if searching_for not in feature_object:
                 feature_object[searching_for] = []
@@ -917,7 +920,7 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def heirarchy(self, features, root_on_genes = False, relationships = []):
+    def hierarchy(self, features, root_on_genes = False, relationships = []):
         """
            Returns the hierarchy of a feature (i.e. the parent/child relationship graph), but routed on the feature itself (rather than Gene).
         """
@@ -938,13 +941,22 @@ class Features(BaseController):
                     _new_features[gene] = 1
             features = _new_features.keys()
         
+        names_results = self.queries.getFeatureNameFromUniqueNames(features)
+        names = {}
+        for names_result in names_results:
+            names[names_result["uniquename"]] = names_result["name"]
+        
         results = []
         for feature in features:
             feature_object = {
-                "name" : feature, 
+                "uniquename" : feature, 
                 "parents" : [], 
                 "children" : []
             }
+            
+            if feature in names and names[feature] != "None":
+                feature_object["name"] = names[feature]
+            
             self._search_for_relations(feature_object, relationship_ids, "parents")
             self._search_for_relations(feature_object, relationship_ids, "children")
             results.append(feature_object)
@@ -954,7 +966,7 @@ class Features(BaseController):
                 "heirarchy" : results,
             }
         }
-    heirarchy.arguments = { 
+    hierarchy.arguments = { 
         "features" : "a list of features" ,
         "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
     }
@@ -1806,6 +1818,8 @@ if sys.platform[:4] == 'java':
     # import net.sf.samtools.SAMRecordIterator as SAMRecordIterator
     import net.sf.samtools.SAMRecord as SAMRecord
     import java.io.File
+    import array
+    import java.lang.Math as Math
     
     # allow locking
     from threading import Lock 
@@ -1942,26 +1956,26 @@ if sys.platform[:4] == 'java':
             """
                Computes the coverage count for a range, windowed in steps.
             """
+            
+            import time
+            import datetime
+            
+            start_time = datetime.datetime.now()
+            
+            
             file_reader = self._get_reader(fileID)
             
             start = int(start)
             end = int(end)
             window = int(window)
             
-            coverage = {}
+            
             max_count = 0
             
-            logger.info("binning")
-            bins = range(start, end, window)
-            for b in bins:
-            	coverage[int(b/window)] = 0
-            n_bins = len(bins)
-            
-            
-            
+            n_bins = Math.round((end-start+1)/window);
+            coverage = array.zeros('i', n_bins)
             
             if file_reader is not None:
-                
                 samRecordIterator = None
                 
                 lock = Lock()
@@ -1976,48 +1990,38 @@ if sys.platform[:4] == 'java':
                             for block in blocks:
                                 for k in range(0, block.getLength()):
                                     
-                                    pos = int( block.getReferenceStart() + k )
-                                    
-                                    bin = int(pos / window)
+                                    pos = block.getReferenceStart() + k 
+                                    bin = Math.round(pos / window)
                                     
                                     if ((bin < 0) or (bin > n_bins-1)):
                                         continue
-                                    
-                                    # should not be necessary, as we're prefilling this now...
-                                    # if bin not in coverage:
-                                    #   coverage[bin] = 0
                                     
                                     coverage[bin]+=1
                                     if(coverage[bin] > max_count):
                                         max_count = coverage[bin]
                             
-                        samRecordIterator.close()
+                        
                     except Exception, e:
-                        if samRecordIterator is not None:
-                            samRecordIterator.close()
                         logger.error(e)
                         raise ropy.server.ServerException("Could not parse the file. Error was : '%s'. " % str(e), ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
-                    
-                
-                logger.info("sorting")
-                
-                sorted_coverage = []
-                
-                coverage_keys = coverage.keys()
-                coverage_keys.sort()
-                
-                for key in coverage_keys:
-                    sorted_coverage.append(coverage[key])
-                
-                logger.info("sorted")
-                
-                    
+                    finally:
+                        if samRecordIterator is not None:
+                            samRecordIterator.close()
+            
+            end_time = datetime.datetime.now()
+            time = start_time - end_time
+            
+            logger.info("sorted")
             data = {
                "response" : {
                    "name" : "sams/coverage",
-                   "coverage" : sorted_coverage,
+                   "coverage" : coverage.tolist(),
                    "max_count" : max_count,
-                   "n_bins" : len(sorted_coverage)
+                   "n_bins" : n_bins,
+                   "start" : start,
+                   "end" : end,
+                   "window" : window,
+                   "time" :  time.seconds
                }
             }
             return data
