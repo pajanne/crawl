@@ -9,5 +9,5 @@
 # when trying to access threading properties. 
 # 
 
-jython server.py -c ini/config.py -l ini/logging.ini #-p /home/gv1/tmp/pid -d -t
+jython -Dlogfolder=/tmp server.py -c ini/config.py -l ini/logging.ini #-p /home/gv1/tmp/pid -d -t
 
