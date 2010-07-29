@@ -1821,6 +1821,9 @@ if sys.platform[:4] == 'java':
     import array
     import java.lang.Math as Math
     
+    import org.genedb.crawl.business.Sam as Sam
+    
+    
     # allow locking
     from threading import Lock 
     
@@ -1957,83 +1960,30 @@ if sys.platform[:4] == 'java':
                Computes the coverage count for a range, windowed in steps.
             """
             
-            import time
-            import datetime
-            
-            start_time = datetime.datetime.now()
-            
-            
             file_reader = self._get_reader(fileID)
             
             start = int(start)
             end = int(end)
             window = int(window)
             
-            
-            max_count = 0
-            
-            n_bins = Math.round((end-start+1)/window)
-            
-            logger.info((start,end,window,end-start+1,(end-start+1)/window,n_bins))
-            
-            coverage = array.zeros('i', n_bins)
-            
-            if file_reader is not None:
-                samRecordIterator = None
-                
-                lock = Lock()
-                with lock:
-                    try:
-                        logger.info("querying")
-                        samRecordIterator = file_reader.query(sequence, start, end, False)
-                        logger.info("looping")
-                        while samRecordIterator.hasNext():
-                            record = samRecordIterator.next()
-                            blocks = record.getAlignmentBlocks()
-                            for block in blocks:
-                                for k in range(0, block.getLength()):
-                                    
-                                    pos = block.getReferenceStart() + k - start
-                                    bin = Math.round(pos / window)
-                                    
-                                    
-                                    #if record.getReadName() == "IL6_4415:2:54:17521:5107#11":
-                                    #    logger.info(record.getReadName() + " " + str(record.getAlignmentStart()) + " " + str(pos) + " " +  str(bin) + " = " + str(k) + " " + str(window)  + " "+ str(bin < 0) + " " + str(bin > n_bins-1) )
-                                    
-                                    
-                                    if ((bin < 0) or (bin > n_bins-1)):
-                                        continue
-                                    
-                                    
-                                    
-                                    coverage[bin]+=1
-                                    if(coverage[bin] > max_count):
-                                        max_count = coverage[bin]
-                            
-                        
-                    except Exception, e:
-                        logger.error(e)
-                        raise ropy.server.ServerException("Could not parse the file. Error was : '%s'. " % str(e), ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
-                    finally:
-                        if samRecordIterator is not None:
-                            samRecordIterator.close()
-            
-            end_time = datetime.datetime.now()
-            time = start_time - end_time
-            
-            logger.info("sorted")
             data = {
                "response" : {
                    "name" : "sams/coverage",
-                   "coverage" : coverage.tolist(),
-                   "max_count" : max_count,
-                   "n_bins" : n_bins,
                    "start" : start,
                    "end" : end,
                    "window" : window,
-                   "time" :  time.seconds
                }
             }
+            
+            if file_reader is not None:
+                
+                sam = Sam()
+                mappedCoverage = sam.coverage(file_reader, int(fileID), sequence, int(start), int(end), int(window))
+                
+                data["response"]["coverage"] = mappedCoverage.coverage.tolist()
+                data["response"]["max"] = mappedCoverage.max
+                data["response"]["bins"] = mappedCoverage.bins
+                
             return data
         coverage.arguments = {
             "fileID" : "the fileID of the SAM or BAM.",
