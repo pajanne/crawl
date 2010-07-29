@@ -1811,6 +1811,18 @@ class Organisms(BaseController):
     }
     
 
+
+
+
+
+
+
+
+
+
+
+
+
 import sys
 if sys.platform[:4] == 'java':
     
@@ -1821,6 +1833,7 @@ if sys.platform[:4] == 'java':
     import array
     import java.lang.Math as Math
     
+    import org.genedb.crawl.business.FileStoreHeirarchyIndex as FileStoreHeirarchyIndex
     import org.genedb.crawl.business.Sam as Sam
     
     
@@ -1835,42 +1848,15 @@ if sys.platform[:4] == 'java':
             self.file_store_path = file_store_config["path"]
             self.db_mappings = file_store_config["db_mappings"]
             
-            self.file_store = {}
-            self.file_readers = {}
-            self.counter = 1
-
-            self._recurse_paths(self.file_store_path)
-            logger.info(self.file_store)
-        
-        
-        def _recurse_paths(self, path):
-            print path
-            logger.info(path)
-            for f in os.listdir(path):
-                f_path = path + "/" + f
-                if os.path.isdir(f_path):
-                    self._recurse_paths(f_path)
-                elif (f.endswith(".bam")):
-                    logger.info ("\t %s" % f_path)
-                    self.file_store[self.counter] = f_path
-                    self.counter+=1
-        
+            self.file_store = FileStoreHeirarchyIndex()
+            self.file_store.setFileStorePath(self.file_store_path)
+            
+            self.sam = Sam()
+            self.sam.heirarchyIndex = self.file_store
+            
         def _get_reader(self, fileID):
-            
-            fileID = int(fileID)
-            
-            logger.info(fileID)
-            
-            if fileID in self.file_readers:
-                logger.info("Using existing...")
-                return self.file_readers[fileID]
-            
-            if fileID in self.file_store:
-                logger.info("Making a new reader...")
-                file_path = self.file_store[fileID]
-                file_object = java.io.File(file_path)
-                self.file_readers[fileID] = SAMFileReader(file_object)
-                return self.file_readers[fileID]
+            return self.file_store.getSamOrBam(int(fileID))
+        
         
         @cherrypy.expose
         @ropy.server.service_format()
@@ -1880,8 +1866,8 @@ if sys.platform[:4] == 'java':
             """
             
             files = []
-            for k,v in self.file_store.items():
-                files.append({ "fileID" : k, "path" : v })
+            for file_info in self.file_store:
+                files.append({ "fileID" : file_info.getId(), "path" : file_info.getFile().getPath(), "meta" : file_info.getMeta() })
             
             data = {
                "response" : {
@@ -1965,6 +1951,7 @@ if sys.platform[:4] == 'java':
             start = int(start)
             end = int(end)
             window = int(window)
+            fileID = int(fileID)
             
             data = {
                "response" : {
@@ -1977,8 +1964,7 @@ if sys.platform[:4] == 'java':
             
             if file_reader is not None:
                 
-                sam = Sam()
-                mappedCoverage = sam.coverage(file_reader, int(fileID), sequence, int(start), int(end), int(window))
+                mappedCoverage = self.sam.coverage(fileID, sequence, start, end, window)
                 
                 data["response"]["coverage"] = mappedCoverage.coverage.tolist()
                 data["response"]["max"] = mappedCoverage.max
@@ -2085,12 +2071,14 @@ if sys.platform[:4] == 'java':
                             #                             # }
                             #                         })
                         
-                        samRecordIterator.close()
                         logger.info("done")
                     except Exception, e:
-                        samRecordIterator.close()
                         logger.error(e)
                         raise ropy.server.ServerException("Could not parse the file. Error was : '%s'. " % str(e), ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
+                    finally:
+                        if samRecordIterator is not None:
+                            samRecordIterator.close()
+            
                     
             data = {
                "response" : {
@@ -2132,15 +2120,18 @@ if sys.platform[:4] == 'java':
             files = []
             
             if len(patterns) != 0:
-                for k,v in self.file_store.items():
+                for file_info in self.file_store:
+                    fileID = file_info.getId()
+                    path = file_info.getFile().getPath()
+                    meta = file_info.getMeta()
                     is_match = False
                     for pattern in patterns:
-                        logger.info((pattern,v, re.search(pattern, v)))
-                        if re.search(pattern, v):
+                        logger.info((pattern,path, re.search(pattern, path)))
+                        if re.search(pattern, path):
                             is_match = True
                     
                     if is_match == True:
-                        files.append({ "fileID" : k, "path" : v })
+                        files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
             
             return {
                "response" : {
