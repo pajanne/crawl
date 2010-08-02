@@ -1502,7 +1502,10 @@ class Regions(BaseController):
         regionID = self.queries.getFeatureID(region)
         exclude = ropy.server.to_array(exclude)
         
-        actual_boundaries = self.queries.getFeatureLocationsMaxAndMinBoundaries(regionID, start, end)[0]
+        # trying to speed up the boundary query by determining the types in advance
+        gene_types = self.queries.getCvtermID("sequence", ["gene", "pseudogene"])
+        
+        actual_boundaries = self.queries.getFeatureLocationsMaxAndMinBoundaries(regionID, start, end, gene_types)[0]
         
         logger.debug(actual_boundaries)
         

@@ -150,11 +150,12 @@ class Queries(QueryProcessor):
         return self.runQueryAndMakeDictionary("get_locations", args)
     
     
-    def getFeatureLocationsMaxAndMinBoundaries(self, region_id, start, end):
+    def getFeatureLocationsMaxAndMinBoundaries(self, region_id, start, end, types):
         args = {
             "regionid": region_id,
             "start": start,
-            "end": end
+            "end": end, 
+            "types" : tuple(types)
         }
         return self.runQueryAndMakeDictionary("get_location_min_and_max_boundaries", args)
 
