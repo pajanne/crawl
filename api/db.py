@@ -370,7 +370,9 @@ class Queries(QueryProcessor):
     def getAnlysis(self, features):
         return self.runQueryAndMakeDictionary("get_analysis", { "features" : tuple(features) })
     
-    def getSynonym(self, uniquenames):
+    def getSynonym(self, uniquenames, types):
+        if types is not None and len(types) > 0:
+            return self.runQueryAndMakeDictionary("get_synonym_of_type", {"uniquenames" : tuple(uniquenames), "types" : tuple(types) })
         return self.runQueryAndMakeDictionary("get_synonym", {"uniquenames" : tuple(uniquenames)})
     
     def getBlastMatch(self, subject, start, end, target = None, score = None):

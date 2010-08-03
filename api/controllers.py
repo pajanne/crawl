@@ -508,12 +508,14 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def synonyms(self, features):
+    def synonyms(self, features, types=[]):
         """
            Returns gene synonyms.
         """
         features = ropy.server.to_array(features) 
-        results = self._sql_results_to_collection("feature", "synonyms", self.queries.getSynonym(features))
+        types = ropy.server.to_array(types) 
+        
+        results = self._sql_results_to_collection("feature", "synonyms", self.queries.getSynonym(features, types))
         
         return {
             "response" : {
