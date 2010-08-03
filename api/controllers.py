@@ -27,12 +27,12 @@ class BaseController(ropy.server.RESTController):
         An abstract class with common methods shared by crawl controllers. Not to be instantiated directly.
     """
    
-    def __init__(self):
+    def __init__(self, queries = None):
         self.templateFilePath = os.path.dirname(__file__) + "/../tpl/"
         
         # declaring an instance variable, which will be called by most methods, must set if the controller is instantiated out of a server context
         # designed to be a db.Queries instance
-        self.queries = None
+        self.queries = queries
         
     
     def init_handler(self):
