@@ -138,6 +138,37 @@ class BaseController(ropy.server.RESTController):
         return results.values()
     
     
+    def _search_for_relations(self, feature_object, relationship_ids, searching_for = "parents"):
+        """
+           A recursive trawl up or down feature relationships. Can go up (parents) or down (children).
+        """
+        uniquename = feature_object["uniquename"]
+
+        if searching_for == "parents":
+            relations = self.queries.getRelationshipsParents([uniquename], relationship_ids)
+        elif searching_for == "children":
+            relations = self.queries.getRelationshipsChildren([uniquename], relationship_ids)
+        else:
+            raise ropy.server.ServerException("Wrong searching_for value: " + searching_for, ropy.server.ERROR_CODES["BAD_PARAMETER"])
+
+        for relation in relations:
+            relation_object = {
+                "uniquename" : relation["uniquename"],
+                searching_for : [], 
+                "type": relation["type"],
+                "relationship": relation["relationship_type"],
+            }
+
+            if relation["name"] != "None":
+                relation_object["name"] = relation["name"]
+
+            if searching_for not in feature_object:
+                feature_object[searching_for] = []
+            feature_object[searching_for].append(relation_object)
+
+            self._search_for_relations(relation_object, relationship_ids, searching_for)
+
+    
     def getOrganismID(self, organism):
         """
            A utility for getting an organism ID from a taxonID or an organismID or a common name. If no prefix
@@ -474,6 +505,25 @@ class Features(BaseController):
     """
         Feature related queries.
     """
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def synonyms(self, features):
+        """
+           Returns gene synonyms.
+        """
+        features = ropy.server.to_array(features) 
+        results = self._sql_results_to_collection("feature", "synonyms", self.queries.getSynonym(features))
+        
+        return {
+            "response" : {
+                "name" : "features/synonyms", 
+                "results" : results
+            }
+        }
+    synonyms.arguments = {
+        "features" : "the list of features"
+    }
     
     @cherrypy.expose
     @ropy.server.service_format()
@@ -887,35 +937,6 @@ class Features(BaseController):
     
     
     
-    def _search_for_relations(self, feature_object, relationship_ids, searching_for = "parents"):
-        """
-           A recursive trawl up or down feature relationships. Can go up (parents) or down (children).
-        """
-        uniquename = feature_object["uniquename"]
-        
-        if searching_for == "parents":
-            relations = self.queries.getRelationshipsParents([uniquename], relationship_ids)
-        elif searching_for == "children":
-            relations = self.queries.getRelationshipsChildren([uniquename], relationship_ids)
-        else:
-            raise ropy.server.ServerException("Wrong searching_for value: " + searching_for, ropy.server.ERROR_CODES["BAD_PARAMETER"])
-        
-        for relation in relations:
-            relation_object = {
-                "uniquename" : relation["uniquename"],
-                searching_for : [], 
-                "type": relation["type"],
-                "relationship": relation["relationship_type"],
-            }
-            
-            if relation["name"] != "None":
-                relation_object["name"] = relation["name"]
-            
-            if searching_for not in feature_object:
-                feature_object[searching_for] = []
-            feature_object[searching_for].append(relation_object)
-            
-            self._search_for_relations(relation_object, relationship_ids, searching_for)
     
     
     @cherrypy.expose

@@ -370,6 +370,9 @@ class Queries(QueryProcessor):
     def getAnlysis(self, features):
         return self.runQueryAndMakeDictionary("get_analysis", { "features" : tuple(features) })
     
+    def getSynonym(self, uniquenames):
+        return self.runQueryAndMakeDictionary("get_synonym", {"uniquenames" : tuple(uniquenames)})
+    
     def getBlastMatch(self, subject, start, end, target = None, score = None):
         query_string = self.getQuery("get_blast_match")
         
