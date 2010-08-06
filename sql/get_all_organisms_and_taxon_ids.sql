@@ -3,4 +3,4 @@ from organism o, organismprop op, cvterm c
 where op.type_id = c.cvterm_id 
 and c.name = 'taxonId'
 and o.organism_id = op.organism_id
-order by o.common_name
+order by o.genus, o.species
