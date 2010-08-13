@@ -796,12 +796,13 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def withterm(self, term, controlled_vocabulary = None, region = None):
+    def withterm(self, term, controlled_vocabulary = None,  regex = False, region = None):
         
         # organism_id = None
         #         if organism is not None: organism_id = self.getOrganismID(organism)
         
-        results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary, region)
+        regex = ropy.server.to_bool(regex)
+        results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary, regex, region)
             
         
         for result in results:
@@ -835,6 +836,7 @@ class Features(BaseController):
     withterm.arguments = { 
         "term" : "the controlled vocabulary term",
         "controlled_vocuabulary" : "the controlled vocabulary name (optional)",
+        "regex" : "whether or not to search the values by POSIX regex (default False)",
         "region" : "the region (optional)"
     }
     

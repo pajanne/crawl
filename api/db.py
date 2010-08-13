@@ -260,7 +260,7 @@ class Queries(QueryProcessor):
             return self.runQueryAndMakeDictionary("get_feature_cvterms_all", {"features" : tuple(features) })
         return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cvs" : tuple(cvs) })
     
-    def getFeatureWithCVTerm(self, cvterm, cv = None, region = None):
+    def getFeatureWithCVTerm(self, cvterm, cv = None, regex = False, region = None):
         query_string = self.getQuery("get_features_with_cvterm")
         
         args =  {"cvterm" : cvterm }
@@ -272,6 +272,12 @@ class Queries(QueryProcessor):
         if region is not None and len(region) > 0:
             query_string += " JOIN featureloc fl ON fl.feature_id = f.feature_id AND srcfeature_id=(SELECT feature_id FROM feature WHERE uniquename= %(region)s) "
             args["region"] = region
+        
+        # add the where
+        if regex is True:
+            query_string += " WHERE ct.name ~* %(cvterm)s "
+        else:
+            query_string += " WHERE ct.name = %(cvterm)s "
         
         return self.runQueryStringAndMakeDictionary(query_string, args)
         
@@ -296,7 +302,7 @@ class Queries(QueryProcessor):
         if regex is True:
             query_string += "WHERE fp.value ~* %(value)s "
         else:
-            query_string += "WHERE fp.value = %(value)s  "
+            query_string += "WHERE fp.value = %(value)s "
         
         if type is not None and len(type) > 0:
             query_string += " AND ct.name = %(type)s "
