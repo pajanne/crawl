@@ -5,6 +5,8 @@ SELECT
     fp.value
 FROM featureprop fp
 JOIN feature f ON fp.feature_id = f.feature_id
-JOIN cvterm ct ON fp.type_id = ct.cvterm_id AND ct.name = %(type)s
+JOIN cvterm ct ON fp.type_id = ct.cvterm_id 
 JOIN cv c ON ct.cv_id = c.cv_id 
-WHERE fp.value = %(value)s 
+
+
+

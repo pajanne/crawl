@@ -260,13 +260,21 @@ class Queries(QueryProcessor):
             return self.runQueryAndMakeDictionary("get_feature_cvterms_all", {"features" : tuple(features) })
         return self.runQueryAndMakeDictionary("get_feature_cvterms", {"features" : tuple(features), "cvs" : tuple(cvs) })
     
-    def getFeatureWithCVTerm(self, cvterm, cv, organism_id = None):
-        if organism_id is None:
-            return self.runQueryAndMakeDictionary("get_features_with_cvterm", {"cvterm" : cvterm, "cv" : cv })
-        else:
-            logger.debug(organism_id)
-            logger.debug(self.getQuery("get_features_with_cvterms_in_organism"))
-            return self.runQueryAndMakeDictionary("get_features_with_cvterms_in_organism", {"cvterm" : cvterm, "cv" : cv, "organism_id" : organism_id })
+    def getFeatureWithCVTerm(self, cvterm, cv = None, region = None):
+        query_string = self.getQuery("get_features_with_cvterm")
+        
+        args =  {"cvterm" : cvterm }
+        
+        if cv is not None and len(cv) > 0:
+            query_string += " AND c.name = %(cv)s "
+            args["cv"] = cv
+        
+        if region is not None and len(region) > 0:
+            query_string += " JOIN featureloc fl ON fl.feature_id = f.feature_id AND srcfeature_id=(SELECT feature_id FROM feature WHERE uniquename= %(region)s) "
+            args["region"] = region
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
+        
     
     def getTermsInOrganism(self, cvs, organism_id):
         return self.runQueryAndMakeDictionary("get_features_with_all_cvterms_of_type_in_organism", {"cvs" : tuple(cvs), "organism_id" : organism_id})
@@ -274,10 +282,28 @@ class Queries(QueryProcessor):
     def getTermPathParents(self, cv, terms):
         return self.runQueryAndMakeDictionary("get_cvterm_path_parents", { "cv" : cv, "terms" : tuple(terms) } )
     
-    def getFeatureWithProp(self, type, value, regex):
-        if regex == False:
-            return self.runQueryAndMakeDictionary("get_features_with_prop", { "type" : type, "value" : value  })
-        return self.runQueryAndMakeDictionary("get_features_with_prop_regex", { "type" : type, "value" : value  })
+    def getFeatureWithProp(self, value, type = None, regex = False, region = None):
+        query_string = self.getQuery("get_features_with_prop")
+        
+        args = {"value" : value}
+        
+        # must put this join before the where clause
+        if region is not None and len(region) > 0:
+            query_string += " JOIN featureloc fl ON fl.feature_id = f.feature_id AND srcfeature_id=(SELECT feature_id FROM feature WHERE uniquename= %(region)s) "
+            args["region"] = region
+        
+        # add the where
+        if regex is True:
+            query_string += "WHERE fp.value ~ %(value)s  "
+        else:
+            query_string += "WHERE fp.value = %(value)s  "
+        
+        if type is not None and len(type) > 0:
+            query_string += " AND ct.name = %(type)s "
+            args ["type"] = type
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
+        
     
     def getFeatureCVTermPub(self, feature_cvterm_id):
         results = self.runQuery("get_feature_cvterm_pubs", {"feature_cvterm_id" : feature_cvterm_id })

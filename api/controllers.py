@@ -796,12 +796,12 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def withterm(self, term, controlled_vocabulary, organism = None):
+    def withterm(self, term, controlled_vocabulary = None, region = None):
         
-        organism_id = None
-        if organism is not None: organism_id = self.getOrganismID(organism)
+        # organism_id = None
+        #         if organism is not None: organism_id = self.getOrganismID(organism)
         
-        results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary, organism_id)
+        results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary, region)
             
         
         for result in results:
@@ -832,19 +832,22 @@ class Features(BaseController):
             }
         }
         return data
-    withterm.arguments = { "term" : "the controlled vocabulary term", "controlled_vocuabulary" : "the controlled vocabulary name" }
+    withterm.arguments = { 
+        "term" : "the controlled vocabulary term",
+        "controlled_vocuabulary" : "the controlled vocabulary name (optional)",
+        "region" : "the region (optional)"
+    }
     
     
-        
     
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def withproperty(self, type, value, regex = False):
+    def withproperty(self, value, type = None, regex = False, region = None):
         logger.debug(regex)
         regex = ropy.server.to_bool(regex)
         logger.debug(regex)
-        results = self.queries.getFeatureWithProp(type, value, regex)
+        results = self.queries.getFeatureWithProp(value, type, regex, region)
         data = {
             "response" : {
                 "name" :"features/withproperty",
@@ -852,8 +855,15 @@ class Features(BaseController):
             }
         }
         return data
-    withproperty.arguments = { "type" : "the type of property", "value" : "the value of the property", "regex" : "whether or not to search the values by POSIX regex (default False)" }
-        
+    withproperty.arguments = { 
+        "type" : "the type of property", 
+        "value" : "the value of the property", 
+        "regex" : "whether or not to search the values by POSIX regex (default False)",
+        "region" : "the region (optional)"
+    }
+    
+    
+    
     
     @cherrypy.expose
     @ropy.server.service_format()
@@ -1522,6 +1532,10 @@ class Regions(BaseController):
         """
            Returns a list of features that are located in between the start and end positions of the region.
         """
+        import datetime
+        a = datetime.datetime.now()
+        
+        
         regionID = self.queries.getFeatureID(region)
         exclude = ropy.server.to_array(exclude)
         
@@ -1544,6 +1558,11 @@ class Regions(BaseController):
         # actual_end = actual_boundaries["end"] if actual_boundaries["end"] != "None" else end
         
         locations = self.queries.getFeatureLocations(regionID, actual_start, actual_end, exclude)
+        
+        b = datetime.datetime.now()
+        
+        c = b - a
+        
         return {
             "response" : {
                 "name" : "regions/locations", 
@@ -1553,7 +1572,8 @@ class Regions(BaseController):
                 "actual_end" : actual_end,
                 "region" : region,
                 "features" : locations,
-                "exclude" : exclude
+                "exclude" : exclude, 
+                "time" : c.microseconds / 1000
             }
         }
     locations.arguments = { 
