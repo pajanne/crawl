@@ -389,7 +389,14 @@ class Queries(QueryProcessor):
         return self.runQueryAndMakeDictionary("get_cvterms_from_cv", { "cvs" : tuple(cvs) })
     
     def getFeatureWithNameLike(self, term):
-        return self.runQueryAndMakeDictionary("get_feature_like", { "term" : term } )
+        
+        results1 = self.runQueryAndMakeDictionary("get_feature_like", { "term" : term })
+        results2 = self.runQueryAndMakeDictionary("get_synonym_like", { "term" : term })
+        
+        results = results1 + results2
+        
+        return results
+        
         
     def getFeatureLocsWithNameLike(self, regionID, start, end, term):
         return self.runQueryAndMakeDictionary("feature_locs_like", {

@@ -1078,13 +1078,13 @@ class Features(BaseController):
         """
         return {
             "response" : {
-                "name" : "features/dbxrefs",
+                "name" : "features/withnamelike",
                 "features" : self.queries.getFeatureWithNameLike(term)
             }
         }
         
     withnamelike.arguments = {
-        "features" : "a list of features",
+        "term" : "a search term"
     }
     
     @cherrypy.expose
