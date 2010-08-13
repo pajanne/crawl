@@ -294,7 +294,7 @@ class Queries(QueryProcessor):
         
         # add the where
         if regex is True:
-            query_string += "WHERE fp.value ~ %(value)s  "
+            query_string += "WHERE fp.value ~* %(value)s "
         else:
             query_string += "WHERE fp.value = %(value)s  "
         
