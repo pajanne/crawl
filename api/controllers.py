@@ -1072,19 +1072,24 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def withnamelike(self, term):
+    def withnamelike(self, term, regex = False, region = None):
         """
            Returns features with names like the search term.
         """
+        regex = ropy.server.to_bool(regex)
+        results = self.queries.getFeatureLike(term, regex, region) + self.queries.getSynonymLike(term, regex, region)
+        
         return {
             "response" : {
                 "name" : "features/withnamelike",
-                "features" : self.queries.getFeatureWithNameLike(term)
+                "features" : results
             }
         }
         
     withnamelike.arguments = {
-        "term" : "a search term"
+        "term" : "a search term",
+        "regex" : "whether to make the search regexed (default false)",
+        "region" : "the region (optional)"
     }
     
     @cherrypy.expose
@@ -1581,7 +1586,8 @@ class Regions(BaseController):
     locations.arguments = { 
         "region" : "the uniqueName of the region (source feature)" ,
         "start" : "the start position of the feature locations that you wish to retrieve (counting from 1)",
-        "end" : "the end position of the features locations that you wish to retrieve (counting from 1)"
+        "end" : "the end position of the features locations that you wish to retrieve (counting from 1)",
+        "exclude" : "types of features you want to exclude"
     }
     
     @cherrypy.expose

@@ -388,14 +388,52 @@ class Queries(QueryProcessor):
     def getCvterms(self, cvs):
         return self.runQueryAndMakeDictionary("get_cvterms_from_cv", { "cvs" : tuple(cvs) })
     
-    def getFeatureWithNameLike(self, term):
+    def getFeatureWithNameLike(self, term, regex = False, region = None):
+        query_string = self.getQuery("get_feature_like")
         
-        results1 = self.runQueryAndMakeDictionary("get_feature_like", { "term" : term })
-        results2 = self.runQueryAndMakeDictionary("get_synonym_like", { "term" : term })
+        args = {"term" : term}
+        
         
         results = results1 + results2
         
         return results
+        
+    def getFeatureLike(self, term, regex = False, region = None):
+        query_string = self.getQuery("get_feature_like")
+        
+        args = {"term" : term}
+        
+         # must put this join before the where clause
+        if region is not None and len(region) > 0:
+            query_string += " JOIN featureloc fl ON fl.feature_id = f.feature_id AND srcfeature_id=(SELECT feature_id FROM feature WHERE uniquename= %(region)s) "
+            args["region"] = region
+        
+        # add the where
+        if regex is True:
+            query_string += "WHERE f.uniquename ~* %(term)s or f.name ~* %(term)s "
+        else:
+            query_string += "WHERE f.uniquename = %(term)s or f.name = %(term)s "
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
+        
+    
+    def getSynonymLike(self, term, regex = False, region = None):
+        query_string = self.getQuery("get_synonym_like")
+        
+        args = {"term" : term}
+        
+         # must put this join before the where clause
+        if region is not None and len(region) > 0:
+            query_string += " JOIN featureloc fl ON fl.feature_id = f.feature_id AND srcfeature_id=(SELECT feature_id FROM feature WHERE uniquename= %(region)s) "
+            args["region"] = region
+        
+        # add the where
+        if regex is True:
+            query_string += "WHERE synonym.name ~* %(term)s "
+        else:
+            query_string += "WHERE synonym.name = %(term)s "
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
         
         
     def getFeatureLocsWithNameLike(self, regionID, start, end, term):

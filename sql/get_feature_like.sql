@@ -1,2 +1,2 @@
-SELECT feature.uniquename, feature.name FROM feature WHERE feature.uniquename ~* %(term)s or feature.name ~* %(term)s
+SELECT f.uniquename, f.name FROM feature f
 
