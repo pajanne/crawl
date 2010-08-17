@@ -388,16 +388,7 @@ class Queries(QueryProcessor):
     def getCvterms(self, cvs):
         return self.runQueryAndMakeDictionary("get_cvterms_from_cv", { "cvs" : tuple(cvs) })
     
-    def getFeatureWithNameLike(self, term, regex = False, region = None):
-        query_string = self.getQuery("get_feature_like")
-        
-        args = {"term" : term}
-        
-        
-        results = results1 + results2
-        
-        return results
-        
+    
     def getFeatureLike(self, term, regex = False, region = None):
         query_string = self.getQuery("get_feature_like")
         
