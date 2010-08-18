@@ -6,7 +6,9 @@ SELECT
 	fl.strand,
 	fl.phase,
 	f.is_obsolete,
-	f2.uniquename as part_of
+	f2.uniquename as part_of,
+	fl.is_fmin_partial,
+	fl.is_fmax_partial
 
 FROM feature f
 
