@@ -165,9 +165,34 @@ class Queries(QueryProcessor):
         rows = self.runQueryExpectingSingleRow("get_top_level_type_id")
         return rows[0][0]
     
-    def getTopLevel(self, organism_id):
+    def getTopLevel(self, organism_id, filter = None, offset = None, limit = None):
         top_level_type = self.getTopLevelTypeID()
-        rows = self.runQuery("get_top_level", (organism_id, top_level_type))
+        
+        query = self.getQuery("get_top_level")
+        
+        args = {
+            "organism_id" : organism_id,
+            "type_id" : top_level_type
+        }
+        
+        if filter is not None and filter != "":
+            query += " and f.uniquename ~* %(uniquename)s "
+            args["uniquename"] = filter
+        
+        query += " order by f.uniquename "
+        
+        if limit is not None:
+            if limit != "ALL":
+                #query += " LIMIT ALL "
+            #else:
+                query += " LIMIT %(limit)s "
+                args["limit"] = int(limit)
+        
+        if offset is not None:
+            query += " OFFSET %(offset)s "
+            args["offset"] = int(offset)
+        
+        rows = self.runQueryString(query, args)
         
         results = []
         for r in rows:

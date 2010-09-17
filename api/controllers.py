@@ -1749,12 +1749,12 @@ class Regions(BaseController):
     
     @cherrypy.expose
     @ropy.server.service_format()
-    def inorganism(self, organism):
+    def inorganism(self, organism, filter = None, offset = None, limit = None):
         """
             Returns a list of top level regions for an organism (e.g. chromosomes, contigs etc.).
         """
         organism_id = self.getOrganismID(organism)
-        results = self.queries.getTopLevel(organism_id)
+        results = self.queries.getTopLevel(organism_id, filter, offset, limit)
         
         data = {
            "response" : {
@@ -1767,7 +1767,10 @@ class Regions(BaseController):
         return data
     
     inorganism.arguments = {
-        "organism" : "the organism"
+        "organism" : "the organism", 
+        "filter" : "a regex filter (overrides the offset and limit)",
+        "offset" : "the offset (defaults to 0)",
+        "limit" : "the limit (defaults to ALL)"
     }
     
     
