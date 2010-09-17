@@ -1768,9 +1768,9 @@ class Regions(BaseController):
     
     inorganism.arguments = {
         "organism" : "the organism", 
-        "filter" : "a regex filter (overrides the offset and limit)",
-        "offset" : "the offset (defaults to 0)",
-        "limit" : "the limit (defaults to ALL)"
+        "filter" : "a regex filter (optional)",
+        "offset" : "the offset (optional)",
+        "limit" : "the limit (optional)"
     }
     
     
