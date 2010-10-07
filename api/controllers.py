@@ -864,8 +864,24 @@ class Features(BaseController):
         "region" : "the region (optional)"
     }
     
-    
-    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def withtermproperty(self, organism, vocabularies = [], term_property_type = ""):
+        vocabularies = ropy.server.to_array(vocabularies)
+        organism_id = self.getOrganismID(organism)
+        results = self.queries.getFeaturesWithTermProperty(organism_id, vocabularies, term_property_type)
+        data = {
+            "response" : {
+                "name" :"features/withtermproperty",
+                "features" : results
+            }
+        }
+        return data
+    withtermproperty.arguments = { 
+        "organism" : "the organism", 
+        "vocabularies" : "a list of term vocabularies (optional)", 
+        "term_property_type" : "the type of the term property (e.g. evidence)"
+    }
     
     @cherrypy.expose
     @ropy.server.service_format()

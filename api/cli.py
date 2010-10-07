@@ -66,8 +66,8 @@ def call_method(api, method_name, args):
                 raise se
             except Exception,e:
                 import traceback   
-                logger.error(traceback.format_exc())
-                logger.error(e)
+                #logger.error(traceback.format_exc())
+                #logger.error(e)
                 raise ropy.server.ServerException(str(e), ropy.server.ERROR_CODES["MISC_ERROR"], method_usage(method))
         else:
             raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
@@ -154,7 +154,7 @@ def parse_database_uri(uri):
 def execute(path, function, args, database_uri, password):
     
     (host, port, database, user) = parse_database_uri(database_uri)
-    logger.debug ("host %s port %s database %s user %s" % (host, port, database, user))
+    #logger.debug ("host %s port %s database %s user %s" % (host, port, database, user))
     
     api = get_api(path)
     connectionFactory = ropy.query.ConnectionFactory(host, database, user, password, port)
@@ -219,8 +219,8 @@ def main(database = None):
         
         
         import traceback   
-        logger.error(traceback.format_exc())
-        logger.error(e)
+        #logger.error(traceback.format_exc())
+        #logger.error(e)
         
         print "Error:"
         print e.value
@@ -236,8 +236,8 @@ def main(database = None):
             fail_with_json(1)
         
         import traceback   
-        logger.error(traceback.format_exc())
-        logger.error(e)
+        #logger.error(traceback.format_exc())
+        #logger.error(e)
         
         print "Error:"
         sys.exit(BASIC_USAGE)

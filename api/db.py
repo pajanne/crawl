@@ -97,7 +97,7 @@ class Queries(QueryProcessor):
         self.validateDate(since)        
         rows = self.runQuery("count_changed_features_organism", (organism_id, since))
         count = rows[0][0]
-        logger.debug ( str(organism_id) + " - " + since + " - " + str(count) )
+        #logger.debug ( str(organism_id) + " - " + since + " - " + str(count) )
         return count
     
     def countAllChangedFeaturesForOrganisms(self, since, organismIDs):
@@ -211,7 +211,7 @@ class Queries(QueryProcessor):
 
     
     def getCDSs(self, organism_id):
-        logger.info(organism_id)
+        #logger.info(organism_id)
         return self.runQueryAndMakeDictionary("get_all_cds_features_for_organism", (organism_id, ))
     
     def getMRNAs(self, gene_unique_names):
@@ -468,6 +468,23 @@ class Queries(QueryProcessor):
             return self.runQueryAndMakeDictionary("get_synonym_of_type", {"uniquenames" : tuple(uniquenames), "types" : tuple(types) })
         return self.runQueryAndMakeDictionary("get_synonym", {"uniquenames" : tuple(uniquenames)})
     
+    def getFeaturesWithTermProperty(self, organism_id, vocabularies = [], term_property_type = ""):
+        query_string = self.getQuery("get_features_with_term_property")
+        
+        args = { "organism_id" : organism_id }
+        
+        if vocabularies is not None and len(vocabularies) > 0:
+            query_string += "AND fc_term_cv.name in %(vocabularies)s "
+            args["vocabularies"] = tuple(vocabularies)
+        
+        if term_property_type is not None and len(term_property_type) > 0:
+            query_string += " AND fcp_type.name = %(term_property_type)s "
+            args["term_property_type"] = term_property_type
+        
+        query_string += " ORDER BY f.uniqueName "
+        
+        return self.runQueryStringAndMakeDictionary(query_string, args)
+    
     def getBlastMatch(self, subject, start, end, target = None, score = None):
         query_string = self.getQuery("get_blast_match")
         
@@ -485,8 +502,8 @@ class Queries(QueryProcessor):
             args["score"] = float(score)
             query_string += "\n AND analysisfeature.normscore <= %(score)s "
         
-        logger.debug(query_string)
-        logger.debug(args)
+        #logger.debug(query_string)
+        #logger.debug(args)
         
         return self.runQueryStringAndMakeDictionary(query_string, args)
     
@@ -511,8 +528,8 @@ class Queries(QueryProcessor):
             args["length"] = float(length)
             query_string += "\n AND ( (fl1.fmax - fl1.fmin >= %(length)s ) AND (fl2.fmax - fl2.fmin >= %(length)s )) "
         
-        logger.debug(query_string)
-        logger.debug(args)
+        #logger.debug(query_string)
+        #logger.debug(args)
         
         return self.runQueryStringAndMakeDictionary(query_string, args)
     
@@ -531,14 +548,14 @@ class Queries(QueryProcessor):
         graph_name = row[2]
         loid = row[3]
         
-        logger.debug((graph_id, feature_name, graph_name, loid))
+        #logger.debug((graph_id, feature_name, graph_name, loid))
         
         lobj = self.getConnection().lobject(loid)
-        logger.debug(lobj)
+        #logger.debug(lobj)
         
-        logger.debug(lobj.tell())
+        #logger.debug(lobj.tell())
         data1 = lobj.read()
-        logger.debug(lobj.tell())
+        #logger.debug(lobj.tell())
         
         from cStringIO import StringIO
         from gzip import GzipFile
@@ -559,7 +576,7 @@ class Queries(QueryProcessor):
             time.strptime(date,"%Y-%m-%d")
         except Exception, e:
             # print "date " + date
-            logger.error(e)
+            #logger.error(e)
             se = ServerException("Invalid date: please supply a valid date markes in 'YYYY-MM-DD' format.", ERROR_CODES["INVALID_DATE"])
             raise ServerException, se
 
