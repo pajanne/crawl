@@ -88,13 +88,14 @@ def main():
     root.regions = api.controllers.Regions()
     root.histories = api.controllers.Histories()
     root.terms = api.controllers.Terms()
+    root.sams = api.controllers.Sams(config.file_store_config)
     
     if sys.platform[:4] != 'java':
         # currently the graph module depends on numpy
         root.graphs = api.controllers.Graphs()
     
-    if sys.platform[:4] == 'java':
-        root.sams = api.controllers.Sams(config.file_store_config)
+    
+    
     
     if options.test == True:
         root.testing = api.controllers.Testing()
