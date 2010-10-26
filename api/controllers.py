@@ -138,6 +138,7 @@ class BaseController(ropy.server.RESTController):
         return results.values()
     
     
+    
     def _search_for_relations(self, feature_object, relationship_ids, searching_for = "parents"):
         """
            A recursive trawl up or down feature relationships. Can go up (parents) or down (children).
@@ -1038,10 +1039,10 @@ class Features(BaseController):
                 "genes" : results,
             }
         }
-        heirarchy.arguments = { 
-            "features" : "a list of features" ,
-            "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
-        }
+    genes.arguments = { 
+        "features" : "a list of features" ,
+        "relationships" : "an optional array (i.e. it can be specified several times) detailing the relationship types you want to have, the defaults are [part_of, derives_from]",
+    }
         
     
     @cherrypy.expose
@@ -2061,7 +2062,7 @@ if sys.platform[:4] == 'java':
             "step" : "the step size",
             #"display_coordinates" : "if true, will return coordinates as well",
         }
-    
+        
         
         @cherrypy.expose
         @ropy.server.service_format()
@@ -2258,6 +2259,496 @@ if sys.platform[:4] == 'java':
         }
         
         
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def coverage(self, fileID, sequence, start, end, window): 
+            """
+               Computes the coverage count for a range, windowed in steps.
+            """
+            
+            import datetime
+            a = datetime.datetime.now()
+            
+            file_reader = self._get_reader(fileID)
+            
+            start = int(start)
+            end = int(end)
+            window = int(window)
+            fileID = int(fileID)
+            
+            data = {
+               "response" : {
+                   "name" : "sams/coverage",
+                   "start" : start,
+                   "end" : end,
+                   "window" : window,
+                   "fileID" :fileID 
+               }
+            }
+            
+            if file_reader is not None:
+                
+                mappedCoverage = self.sam.coverage(fileID, sequence, start, end, window)
+                
+                data["response"]["coverage"] = mappedCoverage.coverage.tolist()
+                data["response"]["max"] = mappedCoverage.max
+                data["response"]["bins"] = mappedCoverage.bins
+            
+            b = datetime.datetime.now()
+            data["response"]["time"] = str(b - a)
+            
+            return data
+        coverage.arguments = {
+            "fileID" : "the fileID of the SAM or BAM.",
+            "sequence" : "the name of the sequence",
+            "start" : "the start position",
+            "end" : "the end position",
+            "step" : "the step size",
+            #"display_coordinates" : "if true, will return coordinates as well",
+        }
+        
+        
+        
+else:
+    
+    import inspect
+    import pysam
+    
+    
+    class Sams(BaseController):
+
+        def __init__(self, file_store_config):
+            super(Sams, self).__init__()
+            
+            self.file_store_path = file_store_config["path"]
+            self.db_mappings = file_store_config["db_mappings"]
+            
+            self.file_store = {}
+            self.file_readers = {}
+            self.counter = 1
+            
+            self._recurse_paths(self.file_store_path)
+            logger.info(self.file_store)
+        
+        
+        def _recurse_paths(self, path):
+            logger.info(path)
+            for f in os.listdir(path):
+                f_path = path + "/" + f
+                if os.path.isdir(f_path):
+                    self._recurse_paths(f_path)
+                elif (f.endswith(".bam")):
+                    logger.info ("\t %s" % f_path)
+                    self.file_store[self.counter] = f_path
+                    self.counter+=1
+        
+        def _get_reader(self, fileID):
+            
+            fileID = int(fileID)
+            
+            logger.info(fileID)
+            
+            if fileID in self.file_readers:
+                logger.info("Using existing...")
+                return self.file_readers[fileID]
+            
+            if fileID in self.file_store:
+                logger.info("Making a new reader...")
+                file_path = self.file_store[fileID]
+                
+                #file_object = java.io.File(file_path)
+                
+                self.file_readers[fileID] = samfile = pysam.Samfile( file_path, "rb" )
+                
+                return self.file_readers[fileID]
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def list(self):
+            """
+               Returns a list of SAM / BAM files in the repository. 
+            """
+            
+            files = []
+            for k,v in self.file_store.items():
+                files.append({ "fileID" : k, "path" : v })
+            
+            data = {
+               "response" : {
+                   "name" : "sams/list",
+                   "files" : files
+               }
+            }
+
+            return data
+
+        list.arguments = {}
+        
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def header(self, fileID):
+            """
+               Returns the header attributes for a particular SAM or BAM in the repository.
+            """
+            
+            attributes = {}
+            
+            file_reader = self._get_reader(fileID)
+            logger.info(file_reader)
+            
+            logger.info(dir(file_reader))
+            
+            if file_reader is not None:
+                
+                header = file_reader.header
+                
+                logger.info(header)
+                
+                for k,v in header.items():
+                    logger.debug("%s - %s" % (k,v))
+                    attributes[k] = v
+                
+
+            data = {
+               "response" : {
+                   "name" : "sams/header",
+                   "attributes" : attributes
+               }
+            }
+
+            return data
+
+        header.arguments = {"fileID" : "the fileID of the SAM or BAM."}
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def sequences(self, fileID):
+            """
+               Returns the header attributes for a particular SAM or BAM in the repository.
+            """
+            
+            sequences = []
+            
+            file_reader = self._get_reader(fileID)
+            
+            if file_reader is not None:
+                logger.info(file_reader)
+                
+                for n in range(0, len(file_reader.references)):
+                    sequences.append({
+                        "length" : file_reader.lengths[n],
+                        "name" : file_reader.references[n],
+                        "index" : n
+                    })
+            
+            data = {
+               "response" : {
+                   "name" : "sams/sequences",
+                   "sequences" : sequences
+               }
+            }
+            
+            return data
+        sequences.arguments = {"fileID" : "the fileID of the SAM or BAM."}
+        
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"]):
+            file_reader = self._get_reader(fileID)
+
+            start = int(start)
+            end = int(end)
+            contained = ropy.server.to_bool(contained)
+            fileID = int(fileID)
+            
+            records = {}
+            
+            data = {
+               "response" : {
+                   "name" : "sams/query",
+                   "start" : start,
+                   "end" : end,
+                   "contained" : contained,
+                   "fileID" : fileID, 
+                   "records" : records
+               }
+            }
+            
+            properties = ropy.server.to_array(properties)
+            privates = ["__init__", "default"]
+            
+            for member_info in inspect.getmembers(SamRecord):
+                member_name = member_info[0]
+                
+                if member_name in privates:
+                    continue
+                
+                if member_name in properties:
+                    records[member_name] = []
+            
+            file_reader = self._get_reader(fileID)
+            
+            if file_reader is not None:
+                iterator = file_reader.fetch( sequence, start, end )
+                logger.info(iterator)
+                
+                for i in iterator:
+                    
+                    if i.is_unmapped:
+                        continue
+                    
+                    record = SamRecord(i)
+                    
+                    for prop in records.keys():
+                        method = getattr(record, prop)
+                        value = method()
+                        records[prop].append(value)
+            
+            return data
+        query.arguments = {
+            "fileID" : "the fileID of the SAM or BAM.",
+            "sequence" : "the name of the sequence",
+            "start" : "the start position",
+            "end" : "the end position",
+            "contained" : "whether the query should be contained"
+        }
+    
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
+            """
+               Computes the coverage count for a range, windowed in steps.
+            """
+            
+            import datetime
+            a = datetime.datetime.now()
+            
+            file_reader = self._get_reader(fileID)
+            
+            start = int(start)
+            end = int(end)
+            window = int(window)
+            fileID = int(fileID)
+            
+            n_bins = round((end-start+1)/window)
+            
+            import numpy 
+            
+            coverage = numpy.zeros(n_bins, numpy.int)
+            max_coverage = 0
+            
+            data = {
+               "response" : {
+                   "name" : "sams/coverage",
+                   "start" : start,
+                   "end" : end,
+                   "window" : window,
+                   "fileID" :fileID 
+               }
+            }
+            
+            logger.info(data)
+            logger.info(n_bins)
+            
+            use_pileup = True
+            
+            file_reader = self._get_reader(fileID)
+            if file_reader is not None:
+                
+                if use_pileup:
+                    for pileupcolumn in file_reader.pileup( sequence, start, end ):
+                        
+                        #logger.debug('coverage at base %s = %s' % (pileupcolumn.pos , pileupcolumn.n))
+                        
+                        pos = pileupcolumn.pos
+                        bin = int(pos / window)
+                        
+                        if bin < 0 or bin > (n_bins - 1):
+                            continue
+                        
+                        cov = pileupcolumn.n
+                        
+                        coverage[bin] += cov
+                        
+                        if coverage[bin] > max_coverage:
+                            max_coverage = coverage[bin]
+                        
+                else:
+                    for aligned_read in file_reader.fetch( sequence, start, end ):
+                        #print (type(aligned_read))
+                        #print aligned_read.cigar
+                        
+                        cigar = aligned_read.cigar
+                        
+                        if cigar is None:
+                            continue
+                        
+                        cigar_start = aligned_read.pos
+                        
+                        for cigar_match in cigar:
+                            operation = cigar_match[0]
+                            length = cigar_match[1]
+                            
+                            
+                            """
+                                From the spec (http://samtools.sourceforge.net/SAM1.pdf):
+                                   M Alignment match (can be a sequence match or mismatch) 
+                                   I Insertion to the reference 
+                                   D Deletion from the reference 
+                                   N Skipped region from the reference 
+                                   S Soft clip on the read (clipped sequence present in <seq>) 
+                                   H Hard clip on the read (clipped sequence NOT present in <seq>) 
+                                   P Padding (silent deletion from the padded reference sequence)
+
+                                   From the pysam docs (http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/samtools/glossary.html#term-cigar):
+
+                                   For example, the tuple [ (0,3), (1,5), (0,2) ] refers to an alignment with 3 matches, 5 insertions 
+                                   and another 2 matches.
+                                """
+                            if operation == 0:
+                                
+                                for k in range(0,length):
+                                    
+                                    pos = cigar_start + k
+                                    bin = int(pos / window)
+                                    
+                                    if bin < 0 or bin > (n_bins - 1):
+                                        continue
+                                    
+                                    coverage[bin] += 1
+                                    
+                                    if coverage[bin] > max_coverage:
+                                        max_coverage = coverage[bin]
+                                    
+                            cigar_start += length
+            
+            data["response"]["coverage"] = coverage.tolist()
+            data["response"]["max"] = max_coverage
+            data["response"]["bins"] = n_bins
+            
+            b = datetime.datetime.now()
+            data["response"]["time"] = str(b - a)
+            
+            return data
+        coverage.arguments = {
+            "fileID" : "the fileID of the SAM or BAM.",
+            "sequence" : "the name of the sequence",
+            "start" : "the start position",
+            "end" : "the end position",
+            "step" : "the step size"
+        }
+    
+        @cherrypy.expose
+        @ropy.server.service_format()
+        def listfororganism(self, organism):
+            """
+               Returns a list of SAM / BAM files for a particular organism.
+            """
+            
+            patterns = []
+            
+            organism_id = self.getOrganismID(organism)
+            
+            for db_mapping in self.db_mappings:
+                logger.info(db_mapping)
+                logger.info((int(db_mapping["organismID"]),organism_id))
+                if int(db_mapping["organismID"]) == organism_id:
+                    patterns.append(db_mapping["folder"])
+            
+            logger.info("Matching patterns")
+            logger.info(patterns)
+            files = []
+            
+            if len(patterns) != 0:
+                for fileID, path in self.file_store.items():
+                    
+                    meta = self._get_meta(path)
+                    
+                    
+                    is_match = False
+                    for pattern in patterns:
+                        logger.info((pattern,path, re.search(pattern, path)))
+                        if re.search(pattern, path):
+                            is_match = True
+                    
+                    if is_match == True:
+                        files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
+            
+            return {
+               "response" : {
+                   "name" : "sams/listfororganism",
+                   "files" : files
+               }
+            }
+        
+        listfororganism.arguments = {
+            "organism" : "the organism"
+        }
+        
+        def _get_meta(self, path):
+            
+            uniques = self._get_common_path_elements()
+            logger.info(uniques)
+            
+            path_elements = path.split("/")
+            sb = []
+            for element in path_elements:
+                if element in uniques:
+                    sb.append(element)
+            
+            return " > ".join(sb)
+            
+        
+        def _get_common_path_elements(self):
+            
+            found = []
+            uniques = []
+            
+            for path in self.file_store.values():
+                elements = path.split("/")
+                for element in elements:
+                    
+                    if element in uniques:
+                        uniques.remove(element)
+                        continue
+                    
+                    uniques.append(element)
+                    found.append(element)
+                    
+            return uniques
+        
+    
+    class SamRecord(object):
+        """
+            Abstracts an PySam.AlignmentRead object to look like a Picard.SamRecord object.
+            TODO: The following properties need to be catered for. 
+            
+           ['aend', 'alen', 'bin', 'cigar', 'compare', 'fancy_str', 'flag', 'is_duplicate', 
+           'is_paired', 'is_proper_pair', 'is_qcfail', 'is_read1', 'is_read2', 'is_reverse', 
+           'is_secondary', 'is_unmapped', 'isize', 'mapq', 'mate_is_reverse', 'mate_is_unmapped', 
+           'mpos', 'mrnm', 'opt', 'pos', 'qend', 'qlen', 'qname', 'qqual', 'qstart', 'qual', 'query', 
+           'rlen', 'rname', 'seq', 'tags']
+        """
+        def __init__(self, aligned_read):
+            
+            self.aligned_read = aligned_read
+        
+        def alignmentStart(self):
+            logger.info("%s -- %s (%s) %s " % (
+                self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped
+                ))
+            return self.aligned_read.aend - self.aligned_read.alen
+
+        def alignemtnEnd(self):
+            return self.aligned_read.aend
+            
+        def flags(self):
+            return self.aligned_read.flag
+            
+        def readName(self):
+            return self.aligned_read.rname
 
 class Testing(BaseController):
     """
