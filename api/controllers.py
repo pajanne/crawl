@@ -2507,22 +2507,15 @@ else:
             if file_reader is not None:
                 iterator = file_reader.fetch( sequence, start, end )
                 
-                for aligned_read in iterator:
+                for i in iterator:
                     
-                    if aligned_read.is_unmapped:
+                    if i.is_unmapped:
                         continue
                     
-                    # try:
-                    #                         if contained is True and (aligned_read.pos < start or end < aligned_read.aend):
-                    #                             continue
-                    #                     except Exception, e:
-                    #                         logger.error("Coult not find %s property. " % aligned_read.qname)
-                    #                         logger.error(e)
-                    #                         import traceback   
-                    #                         logger.error(traceback.format_exc())
-                    #                         continue
+                    if contained is True and (i.pos < start or end < i.aend):
+                        continue
                     
-                    record = SamRecord(aligned_read)
+                    record = SamRecord(i)
                     
                     for prop in records.keys():
                         method = getattr(record, prop)
