@@ -2512,6 +2512,10 @@ else:
                     if i.is_unmapped:
                         continue
                     
+                    logger.debug(type(i))
+                    logger.debug(dir(i))
+                    
+                    
                     if contained is True and (i.pos < start or end < i.aend):
                         continue
                     
