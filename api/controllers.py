@@ -2512,9 +2512,15 @@ else:
                     if aligned_read.is_unmapped:
                         continue
                     
-                    if contained is True and (aligned_read.pos < start or end < aligned_read.aend):
+                    try:
+                        if contained is True and (aligned_read.pos < start or end < aligned_read.aend):
+                            continue
+                    except Exception, e:
+                        logger.error("Coult not find %s property. " % aligned_read.qname)
+                        logger.error(e)
+                        import traceback   
+                        logger.error(traceback.format_exc())
                         continue
-                        
                     
                     record = SamRecord(aligned_read)
                     
