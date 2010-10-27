@@ -2507,19 +2507,15 @@ else:
             if file_reader is not None:
                 iterator = file_reader.fetch( sequence, start, end )
                 
-                for i in iterator:
+                for aligned_read in iterator:
                     
-                    if i.is_unmapped:
+                    if aligned_read.is_unmapped:
                         continue
                     
-                    logger.debug(type(i))
-                    logger.debug(dir(i))
-                    
-                    
-                    if contained is True and (i.pos < start or end < i.aend):
+                    if contained is True and (aligned_read.pos < start or end < aligned_read.aend):
                         continue
                     
-                    record = SamRecord(i)
+                    record = SamRecord(aligned_read)
                     
                     for prop in records.keys():
                         method = getattr(record, prop)
