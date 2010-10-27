@@ -89,7 +89,7 @@ def main():
     root.histories = api.controllers.Histories()
     root.terms = api.controllers.Terms()
     
-    if "file_store_config" in config:
+    if hasattr(config, "file_store_config"):
         root.sams = api.controllers.Sams(config.file_store_config)
     
     if sys.platform[:4] != 'java':
