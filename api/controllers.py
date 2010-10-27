@@ -2492,7 +2492,7 @@ else:
             
             if file_reader is not None:
                 iterator = file_reader.fetch( sequence, start, end )
-                logger.info(iterator)
+                # logger.info(iterator)
                 
                 for i in iterator:
                     
@@ -2736,12 +2736,10 @@ else:
             self.aligned_read = aligned_read
         
         def alignmentStart(self):
-            logger.info("%s -- %s (%s) %s " % (
-                self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped
-                ))
+            # logger.info("%s -- %s (%s) %s " % (self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped))
             return self.aligned_read.aend - self.aligned_read.alen
 
-        def alignemtnEnd(self):
+        def alignmentEnd(self):
             return self.aligned_read.aend
             
         def flags(self):
