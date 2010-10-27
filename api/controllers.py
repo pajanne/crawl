@@ -2506,7 +2506,6 @@ else:
             
             if file_reader is not None:
                 iterator = file_reader.fetch( sequence, start, end )
-                # logger.info(iterator)
                 
                 for aligned_read in iterator:
                     
@@ -2535,7 +2534,7 @@ else:
             "end" : "the end position",
             "contained" : "whether the query should be contained"
         }
-    
+        
         @cherrypy.expose
         @ropy.server.service_format()
         def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
@@ -2758,7 +2757,7 @@ else:
         
         def alignmentStart(self):
             # logger.info("%s -- %s (%s) %s " % (self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped))
-            return self.aligned_read.aend - self.aligned_read.alen
+            return self.aligned_read.pos
 
         def alignmentEnd(self):
             return self.aligned_read.aend
