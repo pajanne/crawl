@@ -2020,49 +2020,50 @@ if sys.platform[:4] == 'java':
             return data
 
         sequences.arguments = {"fileID" : "the fileID of the SAM or BAM."}
-        
-        @cherrypy.expose
-        @ropy.server.service_format()
-        def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
-            """
-               Computes the coverage count for a range, windowed in steps.
-            """
-            
-            file_reader = self._get_reader(fileID)
-            
-            start = int(start)
-            end = int(end)
-            window = int(window)
-            fileID = int(fileID)
-            
-            data = {
-               "response" : {
-                   "name" : "sams/coverage",
-                   "start" : start,
-                   "end" : end,
-                   "window" : window,
-                   "fileID" :fileID 
-               }
-            }
-            
-            if file_reader is not None:
-                
-                mappedCoverage = self.sam.coverage(fileID, sequence, start, end, window)
-                
-                data["response"]["coverage"] = mappedCoverage.coverage.tolist()
-                data["response"]["max"] = mappedCoverage.max
-                data["response"]["bins"] = mappedCoverage.bins
-                
-            return data
-        coverage.arguments = {
-            "fileID" : "the fileID of the SAM or BAM.",
-            "sequence" : "the name of the sequence",
-            "start" : "the start position",
-            "end" : "the end position",
-            "step" : "the step size",
-            #"display_coordinates" : "if true, will return coordinates as well",
-        }
-        
+
+                # 
+                # @cherrypy.expose
+                # @ropy.server.service_format()
+                # def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
+                #     """
+                #        Computes the coverage count for a range, windowed in steps.
+                #     """
+                #     
+                #     file_reader = self._get_reader(fileID)
+                #     
+                #     start = int(start)
+                #     end = int(end)
+                #     window = int(window)
+                #     fileID = int(fileID)
+                #     
+                #     data = {
+                #        "response" : {
+                #            "name" : "sams/coverage",
+                #            "start" : start,
+                #            "end" : end,
+                #            "window" : window,
+                #            "fileID" :fileID 
+                #        }
+                #     }
+                #     
+                #     if file_reader is not None:
+                #         
+                #         mappedCoverage = self.sam.coverage(fileID, sequence, start, end, window)
+                #         
+                #         data["response"]["coverage"] = mappedCoverage.coverage.tolist()
+                #         data["response"]["max"] = mappedCoverage.max
+                #         data["response"]["bins"] = mappedCoverage.bins
+                #         
+                #     return data
+                # coverage.arguments = {
+                #     "fileID" : "the fileID of the SAM or BAM.",
+                #     "sequence" : "the name of the sequence",
+                #     "start" : "the start position",
+                #     "end" : "the end position",
+                #     "step" : "the step size",
+                #     #"display_coordinates" : "if true, will return coordinates as well",
+                # }
+                # 
         
         @cherrypy.expose
         @ropy.server.service_format()
@@ -2070,6 +2071,9 @@ if sys.platform[:4] == 'java':
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
             """
+            
+            import datetime
+            a = datetime.datetime.now()
             
             file_reader = self._get_reader(fileID)
             
@@ -2200,6 +2204,12 @@ if sys.platform[:4] == 'java':
             #                    "records" : records
             #                }
             #             }
+            
+            b = datetime.datetime.now()
+            data["response"]["time"] = str(b - a)
+            
+            records = data["response"]["records"]
+            data["response"]["count"] = len (records[ records.keys()[0] ])
             
             return data
 
@@ -2456,8 +2466,12 @@ else:
         @cherrypy.expose
         @ropy.server.service_format()
         def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"]):
+            
+            import datetime
+            a = datetime.datetime.now()
+            
             file_reader = self._get_reader(fileID)
-
+            
             start = int(start)
             end = int(end)
             contained = ropy.server.to_bool(contained)
@@ -2506,6 +2520,9 @@ else:
                         value = method()
                         records[prop].append(value)
             
+            b = datetime.datetime.now()
+            data["response"]["time"] = str(b - a)
+            data["response"]["count"] = len (records[ records.keys()[0] ])
             return data
         query.arguments = {
             "fileID" : "the fileID of the SAM or BAM.",
