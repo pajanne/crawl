@@ -2746,7 +2746,7 @@ else:
             return self.aligned_read.flag
             
         def readName(self):
-            return self.aligned_read.rname
+            return self.aligned_read.qname
 
 class Testing(BaseController):
     """
