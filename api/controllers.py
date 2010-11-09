@@ -2067,7 +2067,7 @@ if sys.platform[:4] == 'java':
         
         @cherrypy.expose
         @ropy.server.service_format()
-        def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"]):
+        def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"], filter=0):
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
             """
@@ -2081,6 +2081,7 @@ if sys.platform[:4] == 'java':
             end = int(end)
             contained = ropy.server.to_bool(contained)
             fileID = int(fileID)
+            filter = int(filter)
             
             properties = ropy.server.to_array(properties)
             
@@ -2097,7 +2098,7 @@ if sys.platform[:4] == 'java':
             }
             
             if file_reader is not None:
-                result = self.sam.query(fileID, sequence, start, end, contained, properties)
+                result = self.sam.query(fileID, sequence, start, end, contained, properties, filter)
                 
                 for entry in result.records.entrySet():
                     property_name = entry.getKey()
@@ -2325,6 +2326,43 @@ else:
     import inspect
     import pysam
     
+    class FileStore(object):
+        
+        def __init__(self):
+            self.file_store = {}
+            self.path_store = {}
+            self.counter = 1
+        
+        def _recurse_paths(self, path):
+            logger.info(path)
+            for f in os.listdir(path):
+                f_path = path + "/" + f
+                if os.path.isdir(f_path):
+                    self._recurse_paths(f_path)
+                elif (f.endswith(".bam")):
+                    logger.info ("\t %s" % f_path)
+                    self.file_store[self.counter] = f_path
+                    self.path_store[self.counter] = f_path
+                    self.counter+=1
+        
+        def getFile(self, id):
+            fileID = int(fileID)
+            
+            logger.info(fileID)
+            
+            if fileID in self.file_readers:
+                logger.info("Using existing...")
+                return self.file_readers[fileID]
+            
+            if fileID in self.file_store:
+                logger.info("Making a new reader...")
+                file_path = self.file_store[fileID]
+                
+                #file_object = java.io.File(file_path)
+                
+                self.file_readers[fileID] = pysam.Samfile( file_path, "rb" )
+                
+                return self.file_readers[fileID]
     
     class Sams(BaseController):
 
@@ -2340,7 +2378,31 @@ else:
             
             self._recurse_paths(self.file_store_path)
             logger.info(self.file_store)
-        
+            
+            self._make_unique_paths()
+            
+            
+            
+        def _make_unique_paths(self):
+            
+            all_elements = {}
+            
+            for fileID, path in self.file_store.items():
+                path_elements = path.split("/")
+                
+                for element in path_elements:
+                    if element not in all_elements:
+                        all_elements[element] = 1
+                    else:
+                        all_elements[element] += 1
+            
+            uniques = []
+            for element, count in all_elements.items():
+                if count == 1:
+                    uniques.append(element)
+            
+            return uniques
+                
         
         def _recurse_paths(self, path):
             logger.info(path)
@@ -2357,19 +2419,15 @@ else:
             
             fileID = int(fileID)
             
-            logger.info(fileID)
-            
             if fileID in self.file_readers:
-                logger.info("Using existing...")
+                logger.info("FileID : %s Using existing..." % fileID)
                 return self.file_readers[fileID]
             
             if fileID in self.file_store:
-                logger.info("Making a new reader...")
+                
                 file_path = self.file_store[fileID]
-                
-                #file_object = java.io.File(file_path)
-                
-                self.file_readers[fileID] = samfile = pysam.Samfile( file_path, "rb" )
+                logger.info("Making a new reader for %s %s... " % (fileID, file_path))
+                self.file_readers[fileID] = pysam.Samfile( file_path, "rb" )
                 
                 return self.file_readers[fileID]
         
@@ -2381,8 +2439,10 @@ else:
             """
             
             files = []
-            for k,v in self.file_store.items():
-                files.append({ "fileID" : k, "path" : v })
+            for fileID,path in self.file_store.items():
+                meta = self._get_meta(path)
+                files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
+            
             
             data = {
                "response" : {
@@ -2465,7 +2525,7 @@ else:
         
         @cherrypy.expose
         @ropy.server.service_format()
-        def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"]):
+        def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"], filter = 0 ):
             
             import datetime
             a = datetime.datetime.now()
@@ -2476,6 +2536,7 @@ else:
             end = int(end)
             contained = ropy.server.to_bool(contained)
             fileID = int(fileID)
+            filter = int(filter)
             
             records = {}
             
@@ -2486,9 +2547,12 @@ else:
                    "end" : end,
                    "contained" : contained,
                    "fileID" : fileID, 
-                   "records" : records
+                   "records" : records, 
+                   "reader": file_reader.references
                }
             }
+            
+            logger.debug(data)
             
             properties = ropy.server.to_array(properties)
             privates = ["__init__", "default"]
@@ -2502,17 +2566,25 @@ else:
                 if member_name in properties:
                     records[member_name] = []
             
-            file_reader = self._get_reader(fileID)
-            
+            count_total = 0
+            count_proper = 0
+            count_skipped = 0
             if file_reader is not None:
-                iterator = file_reader.fetch( sequence, start, end )
                 
-                for aligned_read in iterator:
+                logger.info((sequence, start, end))
+                
+                for aligned_read in file_reader.fetch( reference=sequence, start=start, end=end ):
+                    count_total += 1
                     
-                    if aligned_read.is_unmapped:
-                        continue
+                    if filter != 0:
+                        if (aligned_read.flag & filter) > 0:
+                            count_skipped +=1
+                            continue
+                    
+                    # logger.debug((aligned_read.qname, aligned_read.pos, aligned_read.aend, aligned_read.flag, aligned_read.cigar))
                     
                     if contained is True and (aligned_read.pos < start or end < aligned_read.aend):
+                        count_skipped +=1
                         continue
                     
                     record = SamRecord(aligned_read)
@@ -2522,9 +2594,12 @@ else:
                         value = method()
                         records[prop].append(value)
             
+            
             b = datetime.datetime.now()
             data["response"]["time"] = str(b - a)
             data["response"]["count"] = len (records[ records.keys()[0] ])
+            data["response"]["count_total"] = count_total
+            data["response"]["count_skipped"] = count_skipped
             return data
         query.arguments = {
             "fileID" : "the fileID of the SAM or BAM.",
@@ -2708,7 +2783,7 @@ else:
         
         def _get_meta(self, path):
             
-            uniques = self._get_common_path_elements()
+            uniques = self._make_unique_paths()
             logger.info(uniques)
             
             path_elements = path.split("/")
@@ -2720,23 +2795,6 @@ else:
             return " > ".join(sb)
             
         
-        def _get_common_path_elements(self):
-            
-            found = []
-            uniques = []
-            
-            for path in self.file_store.values():
-                elements = path.split("/")
-                for element in elements:
-                    
-                    if element in uniques:
-                        uniques.remove(element)
-                        continue
-                    
-                    uniques.append(element)
-                    found.append(element)
-                    
-            return uniques
         
     
     class SamRecord(object):
