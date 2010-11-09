@@ -2812,15 +2812,20 @@ else:
             
             self.aligned_read = aligned_read
         
+        def _to_int(self, value):
+            if value is None:
+                return 0
+            return int(value)
+        
         def alignmentStart(self):
             # logger.info("%s -- %s (%s) %s " % (self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped))
-            return self.aligned_read.pos
+            return self._to_int(self.aligned_read.pos)
 
         def alignmentEnd(self):
-            return self.aligned_read.aend
+            return self._to_int(self.aligned_read.aend)
             
         def flags(self):
-            return self.aligned_read.flag
+            return self._to_int(self.aligned_read.flag)
             
         def readName(self):
             return self.aligned_read.qname
