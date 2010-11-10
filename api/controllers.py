@@ -2206,11 +2206,13 @@ if sys.platform[:4] == 'java':
             #                }
             #             }
             
+                records = data["response"]["records"]
+                data["response"]["count"] = len (records[ records.keys()[0] ])
+            
             b = datetime.datetime.now()
             data["response"]["time"] = str(b - a)
             
-            records = data["response"]["records"]
-            data["response"]["count"] = len (records[ records.keys()[0] ])
+            
             
             return data
 
@@ -2567,8 +2569,8 @@ else:
                     records[member_name] = []
             
             count_total = 0
-            count_proper = 0
             count_skipped = 0
+            
             if file_reader is not None:
                 
                 logger.info((sequence, start, end))
@@ -2576,16 +2578,21 @@ else:
                 for aligned_read in file_reader.fetch( reference=sequence, start=start, end=end ):
                     count_total += 1
                     
-                    if filter != 0:
-                        if (aligned_read.flag & filter) > 0:
-                            count_skipped +=1
-                            continue
-                    
-                    # logger.debug((aligned_read.qname, aligned_read.pos, aligned_read.aend, aligned_read.flag, aligned_read.cigar))
+                    #print ((aligned_read.pos, start, end, aligned_read.aend, end < aligned_read.aend, aligned_read.pos < start or end < aligned_read.aend))
                     
                     if contained is True and (aligned_read.pos < start or end < aligned_read.aend):
                         count_skipped +=1
                         continue
+                    
+                    #print ( "%s %s" % (bin(filter).rjust(12) , filter))
+                    #print ( "%s %s %s %s %s" % (bin(aligned_read.flag).rjust(12) , aligned_read.flag, aligned_read.qname, aligned_read.pos, aligned_read.aend))
+                    
+                    if (aligned_read.flag & filter) > 0:
+                        count_skipped +=1
+                        #print "skipped! "
+                        continue
+                    
+                    # logger.debug((aligned_read.qname, aligned_read.pos, aligned_read.aend, aligned_read.flag, aligned_read.cigar))
                     
                     record = SamRecord(aligned_read)
                     
@@ -2819,7 +2826,8 @@ else:
         
         def alignmentStart(self):
             # logger.info("%s -- %s (%s) %s " % (self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped))
-            return self._to_int(self.aligned_read.pos)
+            # we add one here
+            return self._to_int(self.aligned_read.pos) + 1
 
         def alignmentEnd(self):
             return self._to_int(self.aligned_read.aend)
