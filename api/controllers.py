@@ -21,6 +21,7 @@ logger = logging.getLogger("crawl")
 
 import ropy.server
 import db
+import sys
 
 class BaseController(ropy.server.RESTController):
     """
@@ -1896,72 +1897,149 @@ class Organisms(BaseController):
 
 
 
-
-
-
-
-
-
-
-
-
-import sys
-if sys.platform[:4] == 'java':
+class AlignmentStore(object):
     
-    import net.sf.samtools.SAMFileReader as SAMFileReader
-    # import net.sf.samtools.SAMRecordIterator as SAMRecordIterator
-    import net.sf.samtools.SAMRecord as SAMRecord
-    import java.io.File
-    import array
-    import java.lang.Math as Math
+    def __init__(self, file_store_config):
+        self.alignments = file_store_config["alignments"]
+        self._make_unique_paths()
     
-    import org.genedb.crawl.business.FileStoreHeirarchyIndex as FileStoreHeirarchyIndex
-    import org.genedb.crawl.business.Sam as Sam
-    
-    
-    # allow locking
-    from threading import Lock 
-    
-    class Sams(BaseController):
+    def _make_unique_paths(self):
         
-        def __init__(self, file_store_config):
-            super(Sams, self).__init__()
+        all_elements = {}
+        self.uniques = []
+        
+        for fileID in range(len(self.alignments)):
+            alignment = self.alignments[fileID]
+            path = alignment["file"]
             
-            self.file_store_path = file_store_config["path"]
-            self.db_mappings = file_store_config["db_mappings"]
+            path_elements = path.split("/")
             
-            self.file_store = FileStoreHeirarchyIndex()
-            self.file_store.setFileStorePath(self.file_store_path)
-            
+            for element in path_elements:
+                if element not in all_elements:
+                    all_elements[element] = 1
+                else:
+                    all_elements[element] += 1
+                    
+        for element, count in all_elements.items():
+            if count == 1:
+                self.uniques.append(element)
+    
+    def get_reader(self, fileID):
+        
+        fileID = int(fileID)
+
+        if fileID < len(self.alignments):
+            alignment = self.alignments[fileID]
+
+            if "reader" not in alignment:
+                logger.info("Making a new reader for %s %s... " % (fileID, alignment["file"]))
+                if sys.platform[:4] == 'java':
+                    
+                    import net.sf.samtools.SAMFileReader as SAMFileReader
+                    import java.io.File
+                    
+                    alignment["reader"] = SAMFileReader( java.io.File(alignment["file"]) )
+                    
+                else:
+                    import pysam
+                    alignment["reader"] = pysam.Samfile( alignment["file"], "rb" )
+                
+                
+
+            return alignment["reader"]
+
+    def list_files (self, alignments):
+        files = []
+
+        for fileID in range(len(alignments)):
+            alignment = alignments[fileID]
+            path = alignment["file"]
+            meta = self._get_meta(path)
+            files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
+
+        return files
+
+    def _get_meta(self, path):
+
+        path_elements = path.split("/")
+        sb = []
+        for element in path_elements:
+            if element in self.uniques:
+                sb.append(element)
+        
+        return " > ".join(sb)
+
+
+
+
+class Sams(BaseController):
+    
+    def __init__(self, file_store_config):
+        super(Sams, self).__init__()
+        self.alignment_store = AlignmentStore(file_store_config)
+        
+        if sys.platform[:4] == 'java':
+            import org.genedb.crawl.business.Sam as Sam
             self.sam = Sam()
-            self.sam.heirarchyIndex = self.file_store
-            
-        def _get_reader(self, fileID):
-            return self.file_store.getSamOrBam(int(fileID))
-        
-        
-        @cherrypy.expose
-        @ropy.server.service_format()
-        def list(self):
-            """
-               Returns a list of SAM / BAM files in the repository. 
-            """
-            
-            files = []
-            for file_info in self.file_store:
-                files.append({ "fileID" : file_info.getId(), "path" : file_info.getFile().getPath(), "meta" : file_info.getMeta() })
-            
-            data = {
-               "response" : {
-                   "name" : "sams/list",
-                   "files" : files
-               }
-            }
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def list(self):
+        """
+           Returns a list of SAM / BAM files in the repository. 
+        """
 
-            return data
+        files = self.alignment_store.list_files(self.alignment_store.alignments)
 
-        list.arguments = {}
+        data = {
+           "response" : {
+               "name" : "sams/list",
+               "files" : files
+           }
+        }
+
+        return data
+    list.arguments = {}
+    
+    
+    @cherrypy.expose
+    @ropy.server.service_format()
+    def listfororganism(self, organism):
+        """
+           Returns a list of SAM / BAM files for a particular organism.
+        """
+        organism_id = self.getOrganismID(organism)
         
+        matching_alignments = []
+        for fileID in range(len(self.alignment_store.alignments)):
+            alignment = self.alignment_store.alignments[fileID]
+            
+            if alignment["organismID"] == organism_id:
+                matching_alignments.append(alignment)
+                
+        files = self.alignment_store.list_files(matching_alignments)
+        
+        return {
+           "response" : {
+               "name" : "sams/listfororganism",
+               "files" : files
+           }
+        }
+        
+    listfororganism.arguments = {
+        "organism" : "the organism"
+    }
+    
+    
+    
+    
+    
+    
+    if sys.platform[:4] == 'java':
+        
+        
+        # allow locking
+        from threading import Lock 
         
         @cherrypy.expose
         @ropy.server.service_format()
@@ -1972,7 +2050,7 @@ if sys.platform[:4] == 'java':
             
             attributes = {}
             
-            file_reader = self._get_reader(fileID)
+            file_reader = self.alignment_store.get_reader(fileID)
             logger.info(file_reader)
             if file_reader is not None:
                 for entry in file_reader.getFileHeader().getAttributes():
@@ -1999,7 +2077,7 @@ if sys.platform[:4] == 'java':
             
             sequences = []
             
-            file_reader = self._get_reader(fileID)
+            file_reader = self.alignment_store.get_reader(fileID)
             logger.info(file_reader)
             
             if file_reader is not None:
@@ -2020,50 +2098,7 @@ if sys.platform[:4] == 'java':
             return data
 
         sequences.arguments = {"fileID" : "the fileID of the SAM or BAM."}
-
-                # 
-                # @cherrypy.expose
-                # @ropy.server.service_format()
-                # def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
-                #     """
-                #        Computes the coverage count for a range, windowed in steps.
-                #     """
-                #     
-                #     file_reader = self._get_reader(fileID)
-                #     
-                #     start = int(start)
-                #     end = int(end)
-                #     window = int(window)
-                #     fileID = int(fileID)
-                #     
-                #     data = {
-                #        "response" : {
-                #            "name" : "sams/coverage",
-                #            "start" : start,
-                #            "end" : end,
-                #            "window" : window,
-                #            "fileID" :fileID 
-                #        }
-                #     }
-                #     
-                #     if file_reader is not None:
-                #         
-                #         mappedCoverage = self.sam.coverage(fileID, sequence, start, end, window)
-                #         
-                #         data["response"]["coverage"] = mappedCoverage.coverage.tolist()
-                #         data["response"]["max"] = mappedCoverage.max
-                #         data["response"]["bins"] = mappedCoverage.bins
-                #         
-                #     return data
-                # coverage.arguments = {
-                #     "fileID" : "the fileID of the SAM or BAM.",
-                #     "sequence" : "the name of the sequence",
-                #     "start" : "the start position",
-                #     "end" : "the end position",
-                #     "step" : "the step size",
-                #     #"display_coordinates" : "if true, will return coordinates as well",
-                # }
-                # 
+        
         
         @cherrypy.expose
         @ropy.server.service_format()
@@ -2075,7 +2110,7 @@ if sys.platform[:4] == 'java':
             import datetime
             a = datetime.datetime.now()
             
-            file_reader = self._get_reader(fileID)
+            file_reader = self.alignment_store.get_reader(fileID)
             
             start = int(start)
             end = int(end)
@@ -2098,114 +2133,15 @@ if sys.platform[:4] == 'java':
             }
             
             if file_reader is not None:
-                result = self.sam.query(fileID, sequence, start, end, contained, properties, filter)
+                
+                result = self.sam.query(file_reader, sequence, start, end, contained, properties, filter)
                 
                 for entry in result.records.entrySet():
                     property_name = entry.getKey()
                     propert_list = entry.getValue()
                     data["response"]["records"][property_name] = propert_list.toArray().tolist()
                 
-            
-                        # 
-                        # file_reader = self._get_reader(fileID)
-                        # logger.info(file_reader)
-                        # records = {}
-                        # 
-                        # properties = ropy.server.to_array(properties)
-                        # 
-                        # logger.info(dir(SAMRecord))
-                        # 
-                        # filter_props = {}
-                        # 
-                        # for sam_record_prop in dir(SAMRecord):
-                        #     if sam_record_prop.startswith("get"):
-                        #         sam_record_prop_name = sam_record_prop[3:]
-                        #         first_char = sam_record_prop_name[0].lower()
-                        #         sam_record_prop_name_concat =  first_char + sam_record_prop_name[1:]
-                        #         logger.info(sam_record_prop_name_concat)
-                        #         if sam_record_prop_name_concat in properties:
-                        #             filter_props[sam_record_prop_name_concat] = sam_record_prop
-                        # 
-                        # logger.info(filter_props)
-                        # 
-                        # for filter_prop_method,filter_prop_name in filter_props.items():
-                        #     records[filter_prop_method] = []
-                        # 
-                        # if file_reader is not None:
-                        #     start = int(start)
-                        #     end = int(end)
-                        #     contained = ropy.server.to_bool(contained)
-                        #     
-                        #     logger.info((fileID, sequence,start,end,contained))
-                        #     
-                        #     samRecordIterator = None
-                        #     
-                        #     lock = Lock()
-                        #     with lock:
-                        #         try:
-                        #             
-                        #             samRecordIterator = file_reader.query(sequence, start, end, contained);
-                        #             logger.info(samRecordIterator)
-                        #         
-                        #             while samRecordIterator.hasNext():
-                        #                 record = samRecordIterator.next()
-                        #             
-                        #                 if record.getReadUnmappedFlag():
-                        #                     continue
-                        #             
-                        #                 for filter_prop_method,filter_prop_name in filter_props.items():
-                        #                     # logger.info((filter_prop_method,filter_prop_name))
-                        #                 
-                        #                     returned = getattr(record, filter_prop_name).__call__()
-                        #                     records[filter_prop_method].append(returned)
-                        #             
-                        #             
-                        #                 # records["alignmentStart"].append(record.getAlignmentStart())
-                        #                 #                         records["alignmentEnd"].append(record.getAlignmentEnd())
-                        #                 #                         records["flags"].append(record.getFlags())
-                        #                 #                         records["readNames"].append(record.getReadName())
-                        #                                     
-                        #                 #logger.info(record)
-                        #                 # records.append({
-                        #                 #                             "alignmentStart" : record.getAlignmentStart(),
-                        #                 #                             "alignmentEnd" : record.getAlignmentEnd(),
-                        #                 #                             # "mappingQuality" : record.getMappingQuality(),
-                        #                 #                             "readName" : record.getReadName(),
-                        #                 #                             # "readLength" : record.getReadLength(),
-                        #                 #                             "flags" : record.getFlags(),
-                        #                 #                             # "baseQualities" : record.getBaseQualityString(),
-                        #                 #                             # "readBases" : record.getReadString(),
-                        #                 #                             # "flags" : {
-                        #                 #                             #     "readPairedFlag" : record.getReadPairedFlag(),
-                        #                 #                             #     "properPairFlag" : record.getProperPairFlag(),
-                        #                 #                             #     "readUnmappedFlag" : record.getReadUnmappedFlag(),
-                        #                 #                             #     "mateUnmappedFlag" : record.getMateUnmappedFlag(),
-                        #                 #                             #     "readNegativeStrandFlag" : record.getReadNegativeStrandFlag(),
-                        #                 #                             #     "mateNegativeStrandFlag" : record.getMateNegativeStrandFlag(),
-                        #                 #                             #     "firstOfPairFlag" : record.getFirstOfPairFlag(),
-                        #                 #                             #     "secondOfPairFlag" : record.getSecondOfPairFlag(),
-                        #                 #                             #     "notPrimaryAlignmentFlag" : record.getNotPrimaryAlignmentFlag(),
-                        #                 #                             #     "readFailsVendorQualityCheckFlag" : record.getReadFailsVendorQualityCheckFlag(),
-                        #                 #                             #     "duplicateReadFlag" : record.getDuplicateReadFlag()
-                        #                 #                             # }
-                        #                 #                         })
-                        #             
-                        #             logger.info("done")
-                        #         except Exception, e:
-                        #             logger.error(e)
-                        #             raise ropy.server.ServerException("Could not parse the file. Error was : '%s'. " % str(e), ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
-                        #         finally:
-                        #             if samRecordIterator is not None:
-                        #                 samRecordIterator.close()
-                        # 
-                    
-            # data = {
-            #                "response" : {
-            #                    "name" : "sams/query",
-            #                    "records" : records
-            #                }
-            #             }
-            
+                
                 records = data["response"]["records"]
                 data["response"]["count"] = len (records[ records.keys()[0] ])
             
@@ -2225,51 +2161,6 @@ if sys.platform[:4] == 'java':
         }
         
         
-        @cherrypy.expose
-        @ropy.server.service_format()
-        def listfororganism(self, organism):
-            """
-               Returns a list of SAM / BAM files for a particular organism.
-            """
-            
-            patterns = []
-            
-            organism_id = self.getOrganismID(organism)
-            
-            for db_mapping in self.db_mappings:
-                logger.info(db_mapping)
-                logger.info((int(db_mapping["organismID"]),organism_id))
-                if int(db_mapping["organismID"]) == organism_id:
-                    patterns.append(db_mapping["folder"])
-            
-            logger.info("Matching patterns")
-            logger.info(patterns)
-            files = []
-            
-            if len(patterns) != 0:
-                for file_info in self.file_store:
-                    fileID = file_info.getId()
-                    path = file_info.getFile().getPath()
-                    meta = file_info.getMeta()
-                    is_match = False
-                    for pattern in patterns:
-                        logger.info((pattern,path, re.search(pattern, path)))
-                        if re.search(pattern, path):
-                            is_match = True
-                    
-                    if is_match == True:
-                        files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
-            
-            return {
-               "response" : {
-                   "name" : "sams/listfororganism",
-                   "files" : files
-               }
-            }
-        
-        listfororganism.arguments = {
-            "organism" : "the organism"
-        }
         
         
         
@@ -2283,7 +2174,7 @@ if sys.platform[:4] == 'java':
             import datetime
             a = datetime.datetime.now()
             
-            file_reader = self._get_reader(fileID)
+            file_reader = self.alignment_store.get_reader(fileID)
             
             start = int(start)
             end = int(end)
@@ -2302,7 +2193,7 @@ if sys.platform[:4] == 'java':
             
             if file_reader is not None:
                 
-                mappedCoverage = self.sam.coverage(fileID, sequence, start, end, window)
+                mappedCoverage = self.sam.coverage(file_reader, sequence, start, end, window)
                 
                 data["response"]["coverage"] = mappedCoverage.coverage.tolist()
                 data["response"]["max"] = mappedCoverage.max
@@ -2323,139 +2214,11 @@ if sys.platform[:4] == 'java':
         
         
         
-else:
+    else:
     
-    import inspect
-    import pysam
-    
-    class FileStore(object):
         
-        def __init__(self):
-            self.file_store = {}
-            self.path_store = {}
-            self.counter = 1
+        import pysam
         
-        def _recurse_paths(self, path):
-            logger.info(path)
-            for f in os.listdir(path):
-                f_path = path + "/" + f
-                if os.path.isdir(f_path):
-                    self._recurse_paths(f_path)
-                elif (f.endswith(".bam")):
-                    logger.info ("\t %s" % f_path)
-                    self.file_store[self.counter] = f_path
-                    self.path_store[self.counter] = f_path
-                    self.counter+=1
-        
-        def getFile(self, id):
-            fileID = int(fileID)
-            
-            logger.info(fileID)
-            
-            if fileID in self.file_readers:
-                logger.info("Using existing...")
-                return self.file_readers[fileID]
-            
-            if fileID in self.file_store:
-                logger.info("Making a new reader...")
-                file_path = self.file_store[fileID]
-                
-                #file_object = java.io.File(file_path)
-                
-                self.file_readers[fileID] = pysam.Samfile( file_path, "rb" )
-                
-                return self.file_readers[fileID]
-    
-    class Sams(BaseController):
-
-        def __init__(self, file_store_config):
-            super(Sams, self).__init__()
-            
-            self.file_store_path = file_store_config["path"]
-            self.db_mappings = file_store_config["db_mappings"]
-            
-            self.file_store = {}
-            self.file_readers = {}
-            self.counter = 1
-            
-            self._recurse_paths(self.file_store_path)
-            logger.info(self.file_store)
-            
-            self._make_unique_paths()
-            
-            
-            
-        def _make_unique_paths(self):
-            
-            all_elements = {}
-            
-            for fileID, path in self.file_store.items():
-                path_elements = path.split("/")
-                
-                for element in path_elements:
-                    if element not in all_elements:
-                        all_elements[element] = 1
-                    else:
-                        all_elements[element] += 1
-            
-            uniques = []
-            for element, count in all_elements.items():
-                if count == 1:
-                    uniques.append(element)
-            
-            return uniques
-                
-        
-        def _recurse_paths(self, path):
-            logger.info(path)
-            for f in os.listdir(path):
-                f_path = path + "/" + f
-                if os.path.isdir(f_path):
-                    self._recurse_paths(f_path)
-                elif (f.endswith(".bam")):
-                    logger.info ("\t %s" % f_path)
-                    self.file_store[self.counter] = f_path
-                    self.counter+=1
-        
-        def _get_reader(self, fileID):
-            
-            fileID = int(fileID)
-            
-            if fileID in self.file_readers:
-                logger.info("FileID : %s Using existing..." % fileID)
-                return self.file_readers[fileID]
-            
-            if fileID in self.file_store:
-                
-                file_path = self.file_store[fileID]
-                logger.info("Making a new reader for %s %s... " % (fileID, file_path))
-                self.file_readers[fileID] = pysam.Samfile( file_path, "rb" )
-                
-                return self.file_readers[fileID]
-        
-        @cherrypy.expose
-        @ropy.server.service_format()
-        def list(self):
-            """
-               Returns a list of SAM / BAM files in the repository. 
-            """
-            
-            files = []
-            for fileID,path in self.file_store.items():
-                meta = self._get_meta(path)
-                files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
-            
-            
-            data = {
-               "response" : {
-                   "name" : "sams/list",
-                   "files" : files
-               }
-            }
-
-            return data
-
-        list.arguments = {}
         
         
         @cherrypy.expose
@@ -2467,32 +2230,31 @@ else:
             
             attributes = {}
             
-            file_reader = self._get_reader(fileID)
-            logger.info(file_reader)
+            file_reader = self.alignment_store.get_reader(fileID)
             
+            logger.info(file_reader)
             logger.info(dir(file_reader))
             
             if file_reader is not None:
                 
                 header = file_reader.header
-                
                 logger.info(header)
                 
                 for k,v in header.items():
                     logger.debug("%s - %s" % (k,v))
                     attributes[k] = v
                 
-
+            
             data = {
                "response" : {
                    "name" : "sams/header",
                    "attributes" : attributes
                }
             }
-
+            
             return data
-
         header.arguments = {"fileID" : "the fileID of the SAM or BAM."}
+        
         
         @cherrypy.expose
         @ropy.server.service_format()
@@ -2503,7 +2265,7 @@ else:
             
             sequences = []
             
-            file_reader = self._get_reader(fileID)
+            file_reader = self.alignment_store.get_reader(fileID)
             
             if file_reader is not None:
                 logger.info(file_reader)
@@ -2532,7 +2294,7 @@ else:
             import datetime
             a = datetime.datetime.now()
             
-            file_reader = self._get_reader(fileID)
+            file_reader = self.alignment_store.get_reader(fileID)
             
             start = int(start)
             end = int(end)
@@ -2559,6 +2321,7 @@ else:
             properties = ropy.server.to_array(properties)
             privates = ["__init__", "default"]
             
+            import inspect
             for member_info in inspect.getmembers(SamRecord):
                 member_name = member_info[0]
                 
@@ -2627,7 +2390,7 @@ else:
             import datetime
             a = datetime.datetime.now()
             
-            file_reader = self._get_reader(fileID)
+            file_reader = self.alignment_store.get_reader(fileID)
             
             start = int(start)
             end = int(end)
@@ -2656,7 +2419,7 @@ else:
             
             use_pileup = True
             
-            file_reader = self._get_reader(fileID)
+            
             if file_reader is not None:
                 
                 if use_pileup:
@@ -2741,103 +2504,42 @@ else:
             "end" : "the end position",
             "step" : "the step size"
         }
-    
-        @cherrypy.expose
-        @ropy.server.service_format()
-        def listfororganism(self, organism):
-            """
-               Returns a list of SAM / BAM files for a particular organism.
-            """
-            
-            patterns = []
-            
-            organism_id = self.getOrganismID(organism)
-            
-            for db_mapping in self.db_mappings:
-                logger.info(db_mapping)
-                logger.info((int(db_mapping["organismID"]),organism_id))
-                if int(db_mapping["organismID"]) == organism_id:
-                    patterns.append(db_mapping["folder"])
-            
-            logger.info("Matching patterns")
-            logger.info(patterns)
-            files = []
-            
-            if len(patterns) != 0:
-                for fileID, path in self.file_store.items():
-                    
-                    meta = self._get_meta(path)
-                    
-                    
-                    is_match = False
-                    for pattern in patterns:
-                        logger.info((pattern,path, re.search(pattern, path)))
-                        if re.search(pattern, path):
-                            is_match = True
-                    
-                    if is_match == True:
-                        files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
-            
-            return {
-               "response" : {
-                   "name" : "sams/listfororganism",
-                   "files" : files
-               }
-            }
-        
-        listfororganism.arguments = {
-            "organism" : "the organism"
-        }
-        
-        def _get_meta(self, path):
-            
-            uniques = self._make_unique_paths()
-            logger.info(uniques)
-            
-            path_elements = path.split("/")
-            sb = []
-            for element in path_elements:
-                if element in uniques:
-                    sb.append(element)
-            
-            return " > ".join(sb)
-            
         
         
     
-    class SamRecord(object):
-        """
-            Abstracts an PySam.AlignmentRead object to look like a Picard.SamRecord object.
-            TODO: The following properties need to be catered for. 
-            
-           ['aend', 'alen', 'bin', 'cigar', 'compare', 'fancy_str', 'flag', 'is_duplicate', 
-           'is_paired', 'is_proper_pair', 'is_qcfail', 'is_read1', 'is_read2', 'is_reverse', 
-           'is_secondary', 'is_unmapped', 'isize', 'mapq', 'mate_is_reverse', 'mate_is_unmapped', 
-           'mpos', 'mrnm', 'opt', 'pos', 'qend', 'qlen', 'qname', 'qqual', 'qstart', 'qual', 'query', 
-           'rlen', 'rname', 'seq', 'tags']
-        """
-        def __init__(self, aligned_read):
-            
-            self.aligned_read = aligned_read
+class SamRecord(object):
+    """
+        Abstracts an PySam.AlignmentRead object to look like a Picard.SamRecord object.
+        TODO: The following properties need to be catered for. 
         
-        def _to_int(self, value):
-            if value is None:
-                return 0
-            return int(value)
+       ['aend', 'alen', 'bin', 'cigar', 'compare', 'fancy_str', 'flag', 'is_duplicate', 
+       'is_paired', 'is_proper_pair', 'is_qcfail', 'is_read1', 'is_read2', 'is_reverse', 
+       'is_secondary', 'is_unmapped', 'isize', 'mapq', 'mate_is_reverse', 'mate_is_unmapped', 
+       'mpos', 'mrnm', 'opt', 'pos', 'qend', 'qlen', 'qname', 'qqual', 'qstart', 'qual', 'query', 
+       'rlen', 'rname', 'seq', 'tags']
+    """
+    def __init__(self, aligned_read):
         
-        def alignmentStart(self):
-            # logger.info("%s -- %s (%s) %s " % (self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped))
-            # we add one here
-            return self._to_int(self.aligned_read.pos) + 1
+        self.aligned_read = aligned_read
+    
+    def _to_int(self, value):
+        if value is None:
+            return 0
+        return int(value)
+    
+    def alignmentStart(self):
+        # logger.info("%s -- %s (%s) %s " % (self.aligned_read.pos, self.aligned_read.aend, self.aligned_read.alen, self.aligned_read.is_unmapped))
+        # we add one here
+        return self._to_int(self.aligned_read.pos) + 1
 
-        def alignmentEnd(self):
-            return self._to_int(self.aligned_read.aend)
-            
-        def flags(self):
-            return self._to_int(self.aligned_read.flag)
-            
-        def readName(self):
-            return self.aligned_read.qname
+    def alignmentEnd(self):
+        return self._to_int(self.aligned_read.aend)
+        
+    def flags(self):
+        return self._to_int(self.aligned_read.flag)
+        
+    def readName(self):
+        return self.aligned_read.qname
 
 class Testing(BaseController):
     """

@@ -13,26 +13,25 @@ crawl = {
 
 
 file_store_config = {
-    "path" : "/db/heirarchy",
-    "db_mappings" : [
+    "alignments" : [
         {
-            "folder" : "^\S+MRSA252\S+",
+            "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2-Staph_aureus_MRSA252_small/test.bam",
             "name" : "Staphylococcus aureus (MRSA252)",
-            "organismID" : "65", 
+            "organismID" : 65, 
             "chromosomes" : "*"
         },
         {
-            "folder" : "^\S+B_bronchiseptica_RB50\S+",
-            "name" : "Bordetella bronchiseptica",
-            "organismID" : "49", 
+            "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2_11-Staph_aureus_MRSA252/maq/raw.bam",
+            "name" : "Staphylococcus aureus (MRSA252)",
+            "organismID" : 65, 
             "chromosomes" : "*"
         },
         {
-            "folder" : "^\S+S_Typhimurium_D23580\S+",
-            "name" : "Salmonella typhimurium",
-            "organismID" : "165", 
+            "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2_12-Staph_aureus_MRSA252/maq/raw.bam",
+            "name" : "Staphylococcus aureus (MRSA252)",
+            "organismID" : 65, 
             "chromosomes" : "*"
-        }
+        },
     ]
 }
 
