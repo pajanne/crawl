@@ -2,8 +2,12 @@ import optparse
 import os
 import sys
 import imp
-
 import logging
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 import cherrypy
 from cherrypy.process import plugins
@@ -88,7 +92,7 @@ def main():
     root.terms = api.controllers.Terms()
     
     if hasattr(config, "alignments"):
-        root.sams = api.controllers.Sams(config.alignments)
+        root.sams = api.controllers.Sams(json.load(open(config.alignments, "r")))
     
     if sys.platform[:4] != 'java':
         # currently the graph module depends on numpy

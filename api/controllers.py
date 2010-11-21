@@ -1911,7 +1911,7 @@ class AlignmentStore(object):
         for fileID in range(len(self.alignments)):
             alignment = self.alignments[fileID]
             path = alignment["file"]
-            
+            logger.debug("Alignment: " + path)
             path_elements = path.split("/")
             
             for element in path_elements:
