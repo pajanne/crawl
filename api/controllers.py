@@ -1899,8 +1899,8 @@ class Organisms(BaseController):
 
 class AlignmentStore(object):
     
-    def __init__(self, file_store_config):
-        self.alignments = file_store_config["alignments"]
+    def __init__(self, alignments):
+        self.alignments = alignments
         self._make_unique_paths()
     
     def _make_unique_paths(self):
