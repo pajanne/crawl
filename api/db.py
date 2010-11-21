@@ -15,8 +15,8 @@ import os
 import time
 import logging
 
-from ropy.query import QueryProcessor, QueryProcessorException
-from ropy.server import ServerException, ERROR_CODES
+from query import QueryProcessor, QueryProcessorException
+from ropy import ServerException, ERROR_CODES
 
 logger = logging.getLogger("crawl")
 

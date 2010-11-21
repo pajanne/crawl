@@ -4,19 +4,18 @@ import sys
 import imp
 
 import logging
-import util.logconfig
 
 import cherrypy
 from cherrypy.process import plugins
 
-from ropy.server import Root, handle_error, error_page_default, generate_mappings
-from ropy.query import ConnectionFactory
+from api.ropy import Root, handle_error, error_page_default, generate_mappings
+from api.query import ConnectionFactory
 
 import api.controllers
 
 logger = logging.getLogger("crawl")
 
-# note, should these two listeners might be moved into the ropy.server module? the setup depends on cherrypy.config['Connection'], which may be considered to be an app specific setting.
+# note, should these two listeners might be moved into the server module? the setup depends on cherrypy.config['Connection'], which may be considered to be an app specific setting.
 def setup_connection(thread_index):
     """
         make one connection per thread at startup
@@ -73,7 +72,6 @@ def main():
     try:
         import logging.config
         logging.config.fileConfig(options.logging, disable_existing_loggers=False)
-        #util.logconfig.setup().add(config.log).apply()
         
     except Exception, e:
         print e
@@ -151,7 +149,7 @@ def main():
     if sys.platform[:4] == 'java':
         cherrypy.config.update({'server.nodelay': False})
     
-    ropy.server.serve()
+    api.ropy.serve()
     
     app = cherrypy.tree.mount(root, "/", appconfig)
     app2 = cherrypy.tree.mount(StaticRoot(), "/htm", appconfig2)

@@ -9,14 +9,15 @@ Copyright (c) 2010 Wellcome Trust Sanger Institute. All rights reserved.
 
 import sys
 import inspect
-import ropy.query
-import ropy.server
-import util.password
+import query
+import ropy
+import getpass
+import os
+import logging
 
 import db
 import controllers
 
-import logging
 logger = logging.getLogger("crawl")
 
 
@@ -25,6 +26,20 @@ Usage:  python crawler.py -query path/function [-database host:5432/database?use
 """
 
 DEFAULT_URL = "localhost:5432/pathogens?pathdb"
+
+
+
+def get_password(password_key):
+    """
+        Gets a password, first looking for an environmental variable for it (using the password_key as variable name), and falling back
+        to prompting the user for it. 
+    """
+    password=None
+    if password_key in os.environ:
+        password = os.environ[password_key]
+    if password == None:
+        password=getpass.getpass()
+    return password
 
 
 def get_args():
@@ -58,21 +73,21 @@ def call_method(api, method_name, args):
         if inspect.ismethod(method):
             try:
                 return method(**args)
-            except ropy.server.ServerException, se: #@UnusedVariable
+            except ropy.ServerException, se: #@UnusedVariable
                 if se.info == None:
                     se.info = method_usage(method)
                 else:
                     se.info += method_usage(method)
                 raise se
             except Exception,e:
-                import traceback   
+                #import traceback   
                 #logger.error(traceback.format_exc())
                 #logger.error(e)
-                raise ropy.server.ServerException(str(e), ropy.server.ERROR_CODES["MISC_ERROR"], method_usage(method))
+                raise ropy.ServerException(str(e), ropy.ERROR_CODES["MISC_ERROR"], method_usage(method))
         else:
-            raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
+            raise ropy.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
     else:
-        raise ropy.server.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
+        raise ropy.ServerException("%s is not a query of %s." % (method_name, api.__class__.__name__.lower()), ropy.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
 
 
 def get_classes():
@@ -119,10 +134,10 @@ def get_api(path):
             break
 
     if api == None:
-        raise ropy.server.ServerException("Could not find a path of %s.\n" % path,  ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
+        raise ropy.ServerException("Could not find a path of %s.\n" % path,  ropy.ERROR_CODES["UNKOWN_QUERY"], print_classes())
 
     if not isinstance(api, controllers.BaseController):
-        raise ropy.server.ServerException("The path %s must specify a class that inherits from BaseController.\n" % path,  ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
+        raise ropy.ServerException("The path %s must specify a class that inherits from BaseController.\n" % path,  ropy.ERROR_CODES["UNKOWN_QUERY"], print_classes())
     return api
 
 
@@ -134,7 +149,7 @@ def parse_database_uri(uri):
     user = ""
     
     if "/" not in uri:
-        raise ropy.server.ServerException("Invalid database uri '%s'. Please provide a database uri in the form of 'localhost:5432/database?user'." % uri,  ropy.server.ERROR_CODES["MISC_ERROR"])
+        raise ropy.ServerException("Invalid database uri '%s'. Please provide a database uri in the form of 'localhost:5432/database?user'." % uri,  ropy.ERROR_CODES["MISC_ERROR"])
     
     split = uri.split("/")
     
@@ -146,7 +161,7 @@ def parse_database_uri(uri):
     if "?" in split[1]:
         (database, user) = split[1].split("?")
     else:
-        raise ropy.server.ServerException("Must provide a user name in '%s'. Please provide a database uri in the form of 'localhost:5432/database?user'." % uri,  ropy.server.ERROR_CODES["MISC_ERROR"])
+        raise ropy.ServerException("Must provide a user name in '%s'. Please provide a database uri in the form of 'localhost:5432/database?user'." % uri,  ropy.ERROR_CODES["MISC_ERROR"])
     
     return (host, port, database, user)
 
@@ -157,7 +172,7 @@ def execute(path, function, args, database_uri, password):
     #logger.debug ("host %s port %s database %s user %s" % (host, port, database, user))
     
     api = get_api(path)
-    connectionFactory = ropy.query.ConnectionFactory(host, database, user, password, port)
+    connectionFactory = query.ConnectionFactory(host, database, user, password, port)
     api.queries = db.Queries(connectionFactory)
     
     # make the call
@@ -166,12 +181,12 @@ def execute(path, function, args, database_uri, password):
     # tidy up
     connectionFactory.close()
     
-    return ropy.server.Formatter(result).formatJSON()
+    return ropy.Formatter(result).formatJSON()
 
 
 def fail_with_json(code):
-    error_data = ropy.server.generate_error_data()
-    handler = ropy.server.ErrorController()
+    error_data = ropy.generate_error_data()
+    handler = ropy.ErrorController()
     formatted = handler.format(error_data, "json", "error")
     print formatted
     sys.exit(code)
@@ -183,7 +198,7 @@ def main(database = None):
     
     try:
         
-        password = util.password.get_password("CRAWL_PASSWORD")
+        password = get_password("CRAWL_PASSWORD")
         
         args = get_args()
         
@@ -200,25 +215,25 @@ def main(database = None):
                 del args["always_return_json"]
         
         if "query" not in args:
-            raise ropy.server.ServerException("Please provide a -query argument, e.g. '-query genes/list'.", ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_classes())
+            raise ropy.ServerException("Please provide a -query argument, e.g. '-query genes/list'.", ropy.ERROR_CODES["UNKOWN_QUERY"], print_classes())
         else:
             query = args["query"]
             del args["query"]
         
         if "/" not in query:
             api = get_api(query)
-            raise ropy.server.ServerException("Please provide 2 parts to the -query argument, the path and the function, separated by a '/', e.g. '-query genes/list'.", ropy.server.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
+            raise ropy.ServerException("Please provide 2 parts to the -query argument, the path and the function, separated by a '/', e.g. '-query genes/list'.", ropy.ERROR_CODES["UNKOWN_QUERY"], print_methods(api))
             
         (path, function) = query.split("/", 2)
     
         print execute(path, function, args, database, password)
-    except ropy.server.ServerException, e:
+    except ropy.ServerException, e:
         
         if always_return_json == "true":
             fail_with_json(e.code + 1)
         
         
-        import traceback   
+        #import traceback   
         #logger.error(traceback.format_exc())
         #logger.error(e)
         
@@ -235,7 +250,7 @@ def main(database = None):
         if always_return_json == "true":
             fail_with_json(1)
         
-        import traceback   
+        #import traceback   
         #logger.error(traceback.format_exc())
         #logger.error(e)
         

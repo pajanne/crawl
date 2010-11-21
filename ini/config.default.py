@@ -12,26 +12,4 @@ crawl = {
 }
 
 
-file_store_config = {
-    "alignments" : [
-        {
-            "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2-Staph_aureus_MRSA252_small/test.bam",
-            "name" : "Staphylococcus aureus (MRSA252)",
-            "organismID" : 65, 
-            "chromosomes" : "*"
-        },
-        {
-            "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2_11-Staph_aureus_MRSA252/maq/raw.bam",
-            "name" : "Staphylococcus aureus (MRSA252)",
-            "organismID" : 65, 
-            "chromosomes" : "*"
-        },
-        {
-            "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2_12-Staph_aureus_MRSA252/maq/raw.bam",
-            "name" : "Staphylococcus aureus (MRSA252)",
-            "organismID" : 65, 
-            "chromosomes" : "*"
-        },
-    ]
-}
-
+alignments="/path/to/alignments.json"

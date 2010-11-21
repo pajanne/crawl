@@ -9,5 +9,10 @@
 # when trying to access threading properties. 
 # 
 
-jython -Dlogfolder=/tmp server.py -c ini/config.py -l ini/logging.ini #-p /home/gv1/tmp/pid -d -t
+export CLASSPATH=./lib/postgresql-8.4-701.jdbc4.jar
+export CLASSPATH=${CLASSPATH}:./lib/sam-1.27.jar
+export CLASSPATH=${CLASSPATH}:./lib/crawl.jar
+export CLASSPATH=${CLASSPATH}:./lib/log4j.jar
+
+jython -Dlogfolder=./tmp run.py -c ini/config.py -l ini/logging.ini #-p ./tmp/pid -d -t
 

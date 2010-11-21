@@ -3,7 +3,7 @@
 """
 controllers.py
 
-Classes in this module are for exposure as web or command line services. They inherit from ropy.server.RESTController, and their methods are 
+Classes in this module are for exposure as web or command line services. They inherit from ropy.RESTController, and their methods are 
 decorated to expose them. 
 
 Created by Giles Velarde on 2010-02-04.
@@ -19,11 +19,11 @@ import re
 
 logger = logging.getLogger("crawl")
 
-import ropy.server
+import ropy
 import db
 import sys
 
-class BaseController(ropy.server.RESTController):
+class BaseController(ropy.RESTController):
     """
         An abstract class with common methods shared by crawl controllers. Not to be instantiated directly.
     """
@@ -96,7 +96,7 @@ class BaseController(ropy.server.RESTController):
         
         for result in results:
             if key not in result: 
-                raise ropy.server.ServerException("Could not parse the result because it does not have the %s key" % key, ropy.server.ERROR_CODES["DATA_PARSING_ERROR"])
+                raise ropy.ServerException("Could not parse the result because it does not have the %s key" % key, ropy.ERROR_CODES["DATA_PARSING_ERROR"])
             
             result_key_value = result[key]
             del result[key]
@@ -151,7 +151,7 @@ class BaseController(ropy.server.RESTController):
         elif searching_for == "children":
             relations = self.queries.getRelationshipsChildren([uniquename], relationship_ids)
         else:
-            raise ropy.server.ServerException("Wrong searching_for value: " + searching_for, ropy.server.ERROR_CODES["BAD_PARAMETER"])
+            raise ropy.ServerException("Wrong searching_for value: " + searching_for, ropy.ERROR_CODES["BAD_PARAMETER"])
 
         for relation in relations:
             relation_object = {
@@ -192,7 +192,7 @@ class Histories(BaseController):
     """History related queries"""
     
     @cherrypy.expose
-    @ropy.server.service_format("history_annotations")
+    @ropy.service_format("history_annotations")
     def annotation_changes(self, taxonID, since, regex = None):
         """Returns a list of genes that have been detected to have annotation changes."""
         
@@ -206,7 +206,7 @@ class Histories(BaseController):
         
         rows = self.queries.getGenesWithHistoryChangesAnywhere(organism_id, since, date_type_id, curatorName_type_id, qualifier_type_id)
         
-        serving = ropy.server.serving
+        serving = ropy.serving
         
         results = []
         for row in rows:
@@ -264,7 +264,7 @@ class Genes(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def inorganism(self, organism):
         """
             Returns a list of genes in an organism.
@@ -284,7 +284,7 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def inregion(self, region):
         """
             Returns a list of genes located on a particular source feature (e.g. a contig).
@@ -302,12 +302,12 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def sequence(self, region, genes = []):
         """
             Returns a list of genes located on a particular region (e.g. a contig), with their sequences extracted from that region.
         """
-        genes = ropy.server.to_array(genes)
+        genes = ropy.to_array(genes)
         sequence = self.queries.getGeneSequence(region, genes)
         data = {
             "response" : {
@@ -323,12 +323,12 @@ class Genes(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def mrnasequence(self, genes):
         """
             Returns a mRNA sequences for a list of genes.
         """
-        genes = ropy.server.to_array(genes)
+        genes = ropy.to_array(genes)
         results = self.queries.getMRNAs(genes)
         data = {
             "response" : {
@@ -343,13 +343,13 @@ class Genes(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def polypeptidesequence(self, genes):
         """
             Returns a polypeptide sequences for a list of genes.
         """
-        genes = ropy.server.to_array(genes)
-        #genenames = ropy.server.get_array_from_hash("genenames", kwargs)
+        genes = ropy.to_array(genes)
+        #genenames = ropy.get_array_from_hash("genenames", kwargs)
         results = self.queries.getPEPs(genes)
         data = {
             "response" : {
@@ -363,12 +363,12 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def exons(self, region, genes = []):
         """
            Returns the exons coordinates for a list of genes.
         """
-        genes = ropy.server.to_array(genes)
+        genes = ropy.to_array(genes)
         results = self.queries.getExons(region, genes)
         data = {
             "response" : {
@@ -385,7 +385,7 @@ class Genes(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format("changes")
+    @ropy.service_format("changes")
     def changes(self, since, taxonomyID):
         """
             Reports all the features that have changed since a certain date.
@@ -410,7 +410,7 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format("private_annotations")
+    @ropy.service_format("private_annotations")
     def annotation_changes(self, taxonomyID, since):
         """
             Reports all the genes that have been highlighted as having annotation changes.
@@ -443,12 +443,12 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def domains(self, genes):
         """
            Returns domains associated with particular genes.
         """
-        genes = ropy.server.to_array(genes)
+        genes = ropy.to_array(genes)
         relationship_ids = self._get_relationship_ids(["derives_from", "part_of"])
         results = self.queries.getDomains(genes, relationship_ids)
         data = {
@@ -463,12 +463,12 @@ class Genes(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def withdomains(self, domains):
         """
            Returns genes associated with particular domains.
         """
-        domains = ropy.server.to_array(domains)
+        domains = ropy.to_array(domains)
         relationship_ids = self._get_relationship_ids(["derives_from", "part_of"])
         results = self.queries.getWithDomains(domains, relationship_ids)
         data = {
@@ -488,7 +488,7 @@ class Genes(BaseController):
     
     
 #    @cherrypy.expose
-#    @ropy.server.service_format()
+#    @ropy.service_format()
 #    def annotationchangecvterms(self):
 #        """
 #           Returns the members of the controlled vocabulary used to type biologically meaningful annotation changes.
@@ -509,13 +509,13 @@ class Features(BaseController):
     """
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def synonyms(self, features, types=[]):
         """
            Returns gene synonyms.
         """
-        features = ropy.server.to_array(features) 
-        types = ropy.server.to_array(types) 
+        features = ropy.to_array(features) 
+        types = ropy.to_array(types) 
         
         results = self._sql_results_to_collection("feature", "synonyms", self.queries.getSynonym(features, types))
         
@@ -530,19 +530,19 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def properties(self, features = [], uniqueNames=[], u=[], us=None, delimiter = ","):
         """
             Returns featureprops for a given set of uniqueNames.
         """
         
         # build the uniqueNames array from different possilble kwargs
-        uniqueNames = ropy.server.to_array(uniqueNames) 
+        uniqueNames = ropy.to_array(uniqueNames) 
         
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         if len(features) > 0: uniqueNames.extend(features)
         
-        u = ropy.server.to_array(u)
+        u = ropy.to_array(u)
         if len(u) > 0: uniqueNames.extend(u)
         
         # special case of arrays being passed using the us parameter, with the delimiter
@@ -551,7 +551,7 @@ class Features(BaseController):
         logger.debug(uniqueNames)
         
         if len(uniqueNames) == 0: 
-            raise ropy.server.ServerException("Please provide at least one  uniqueName using either the uniqueNames, u or us parameters.", ropy.server.ERROR_CODES["MISSING_PARAMETER"])
+            raise ropy.ServerException("Please provide at least one  uniqueName using either the uniqueNames, u or us parameters.", ropy.ERROR_CODES["MISSING_PARAMETER"])
         
         
         results = self._sql_results_to_collection("feature", "props", self.queries.getFeatureProps(uniqueNames))
@@ -592,7 +592,7 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def length(self, uniquename):
         """
             Returns the length of a feature.
@@ -622,13 +622,13 @@ class Features(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def orthologues(self, features):
         """
            Returns orthologues for a list of features.
         """
         
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         results = self.queries.getOrthologues(features)
         
         orthologues = []
@@ -658,7 +658,7 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def orthologuesinorganism(self, organism):
         """
            Gets all the orthologues in an organism.
@@ -676,12 +676,12 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def clusters(self, orthologues):
         """
            Returns a the orthologue clusters for a given set of orthologues. 
         """
-        orthologues = ropy.server.to_array(orthologues)
+        orthologues = ropy.to_array(orthologues)
         results = self.queries.getOrthologueClusters(orthologues)
         
         data = []
@@ -709,10 +709,10 @@ class Features(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def coordinates(self, features, region = None):
         
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         results = self._sql_results_to_collection("feature", "regions", self.queries.getFeatureCoordinates(features, region))
         
         data = {
@@ -770,14 +770,14 @@ class Features(BaseController):
         return to_return
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def terms(self, features, controlled_vocabularies = []):
         """
             Returns cvterms of type cv_names associated with list of features.
         """
         
-        features = ropy.server.to_array(features)
-        controlled_vocabularies = ropy.server.to_array(controlled_vocabularies)
+        features = ropy.to_array(features)
+        controlled_vocabularies = ropy.to_array(controlled_vocabularies)
         
         logger.debug(features)
         logger.debug(controlled_vocabularies)
@@ -797,13 +797,13 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def withterm(self, term, controlled_vocabulary = None,  regex = False, region = None):
         
         # organism_id = None
         #         if organism is not None: organism_id = self.getOrganismID(organism)
         
-        regex = ropy.server.to_bool(regex)
+        regex = ropy.to_bool(regex)
         results = self.queries.getFeatureWithCVTerm(term, controlled_vocabulary, regex, region)
             
         
@@ -846,10 +846,10 @@ class Features(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def withproperty(self, value, type = None, regex = False, region = None):
         logger.debug(regex)
-        regex = ropy.server.to_bool(regex)
+        regex = ropy.to_bool(regex)
         logger.debug(regex)
         results = self.queries.getFeatureWithProp(value, type, regex, region)
         data = {
@@ -867,9 +867,9 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def withtermproperty(self, organism, vocabularies = [], term_property_type = ""):
-        vocabularies = ropy.server.to_array(vocabularies)
+        vocabularies = ropy.to_array(vocabularies)
         organism_id = self.getOrganismID(organism)
         results = self.queries.getFeaturesWithTermProperty(organism_id, vocabularies, term_property_type)
         data = {
@@ -886,12 +886,12 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def featuresequenceonregion(self, region, features):
         """
             Returns the sequences of features mapped onto a region.
         """
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         # logger.debug(features)
         results = self.queries.getFeatureSequenceFromRegion(region, features)
         data = {
@@ -907,13 +907,13 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def summary(self, features):
         """
            A summary of a feature.
         """
         
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         
         featureproperties = self._sql_results_to_collection("feature", "props",self.queries.getFeatureProps(features))
         terms = self._parse_feature_cvterms(self.queries.getFeatureCVTerm(features, []))
@@ -942,14 +942,14 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def relationships(self, features, relationships = ["derives_from", "part_of"]):
         """
            Gets the relationships of a feature.
         """
         
-        features = ropy.server.to_array(features)
-        relationships = ropy.server.to_array(relationships)
+        features = ropy.to_array(features)
+        relationships = ropy.to_array(relationships)
         
         relationship_ids = self._get_relationship_ids(relationships)
         
@@ -972,19 +972,19 @@ class Features(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def hierarchy(self, features, root_on_genes = False, relationships = []):
         """
            Returns the hierarchy of a feature (i.e. the parent/child relationship graph), but routed on the feature itself (rather than Gene).
         """
-        relationships = ropy.server.to_array(relationships)
+        relationships = ropy.to_array(relationships)
         if len(relationships) == 0: 
             relationships = ["part_of", "derives_from"]
         relationship_ids = self._get_relationship_ids(relationships)
         
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         
-        root_on_genes = ropy.server.to_bool(root_on_genes)
+        root_on_genes = ropy.to_bool(root_on_genes)
         if root_on_genes is True:
             # we want a unique list of genes, so let's build a hash_table and store them as keys, which we can then easily extract
             _new_features = {}
@@ -1027,12 +1027,12 @@ class Features(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def genes(self, features):
         """
            Returns genes that contain a certain feature.
         """
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         results = self._feature_genes(features)
         return {
             "response" : {
@@ -1047,13 +1047,13 @@ class Features(BaseController):
         
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def pubs(self, features):
         """
            Gets the pubs of a feature.
         """
         
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         results = self._sql_results_to_collection("feature", "pubs", self.queries.getFeaturePub(features))
         
         return {
@@ -1068,13 +1068,13 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def dbxrefs(self, features):
         """
            Gets the dbxrefs of a feature.
         """
         
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         results = self._sql_results_to_collection("feature", "dbxrefs", self.queries.getFeatureDbxrefs(features))
         
         return {
@@ -1089,12 +1089,12 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def withnamelike(self, term, regex = False, region = None):
         """
            Returns features with names like the search term.
         """
-        regex = ropy.server.to_bool(regex)
+        regex = ropy.to_bool(regex)
         results = self.queries.getFeatureLike(term, regex, region) + self.queries.getSynonymLike(term, regex, region)
         
         return {
@@ -1111,12 +1111,12 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def analyses(self, features):
         """
            Returns any analyses associated with a feature.
         """
-        features = ropy.server.to_array(features)
+        features = ropy.to_array(features)
         results = self._sql_results_to_collection("feature", "analyses", self.queries.getAnlysis(features))
         return {
             "response" : {
@@ -1131,7 +1131,7 @@ class Features(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def blast(self, subject, start, end, target = None, score = None):
         """
            Returns any blast matches linked to a subject and a target.
@@ -1159,7 +1159,7 @@ class Features(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def blastpair(self, f1, start1, end1, f2, start2, end2, length = None, normscore = None):
         matches = self.queries.getBlastMatchPair(f1, start1, end1, f2, start2, end2, length, normscore)
         results = {
@@ -1206,7 +1206,7 @@ class Graphs(BaseController):
         return self.graphs[sid]
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def list(self):
         """
            Returns a list of all the graphs in the database.
@@ -1220,7 +1220,7 @@ class Graphs(BaseController):
     list.arguments = { }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def data(self, id):
         """
            Returns the entire graph data.
@@ -1245,7 +1245,7 @@ class Graphs(BaseController):
     data.arguments = { "id" : "the id of the graph" }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def info(self, id):
         """
            Returns the information about a graph.
@@ -1271,14 +1271,14 @@ class Graphs(BaseController):
     data.arguments = { "id" : "the id of the graph" }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def fixed(self, id, step, span, start, end, format=False):
         """
            Returns the plot data in fixed-step format.
         """
         
         wiggles = self._get_graph(id)
-        format = ropy.server.to_bool(format)
+        format = ropy.to_bool(format)
         tracks = []
         
         for track in wiggles.tracks:
@@ -1308,14 +1308,14 @@ class Graphs(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def fixed_scaled(self, id, step , span, start, end, format=False, minimum = 0, maximum = 1):
         """
            Returns the plot data in fixed-step format, scaled between the minimum and maximum parameters.
         """
         
         wiggles = self._get_graph(id)
-        format = ropy.server.to_bool(format)
+        format = ropy.to_bool(format)
         tracks = []
         
         for track in wiggles.tracks:
@@ -1349,13 +1349,13 @@ class Graphs(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def variable(self, id, steps, span = None, format=False):
         """
            Returns the plot data in variable-step format.
         """
         
-        steps = ropy.server.to_array(steps)
+        steps = ropy.to_array(steps)
         
         wiggles = self._get_graph(id)
         tracks = []
@@ -1382,13 +1382,13 @@ class Graphs(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def variable_scaled(self, id, steps, span = None, format=False, minimum = 0, maximum = 1):
         """
            Returns the plot data in variable-step format, scaled between the minimum and maximum parameters.
         """
         
-        steps = ropy.server.to_array(steps)
+        steps = ropy.to_array(steps)
         
         wiggles = self._get_graph(id)
         tracks = []
@@ -1428,7 +1428,7 @@ class Terms(BaseController):
     """
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def vocabularies(self):
         """
            Gets a list of all the controlled vocabularies in the database.
@@ -1446,13 +1446,13 @@ class Terms(BaseController):
     vocabularies.arguments = {}
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def list(self, vocabularies):
         """
            Gets a list of all the terms in specified controlled vocabularies.
         """
         
-        vocabularies = ropy.server.to_array(vocabularies)
+        vocabularies = ropy.to_array(vocabularies)
         results = self.queries.getCvterms(vocabularies)
         
         return {
@@ -1468,12 +1468,12 @@ class Terms(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def inorganism(self, vocabularies, organism):
         """
            Returns terms in an organism.
         """
-        vocabularies = ropy.server.to_array(vocabularies)
+        vocabularies = ropy.to_array(vocabularies)
         organism_id = self.getOrganismID(organism)
         
         terms = self.queries.getTermsInOrganism(vocabularies, organism_id)
@@ -1481,7 +1481,7 @@ class Terms(BaseController):
         return {
             "response" : {
                 "name" : "terms/inorganism",
-                "taxonID" : taxonID,
+                "organism" : organism,
                 "terms" : terms
             }
         }
@@ -1491,12 +1491,12 @@ class Terms(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def parents(self, vocabulary, terms):
         """
            Returns parent terms.
         """
-        terms = ropy.server.to_array(terms)
+        terms = ropy.to_array(terms)
         parents = self._sql_results_to_collection("term", "parents", self.queries.getTermPathParents(vocabulary, terms))
         return {
             "response" : {
@@ -1516,7 +1516,7 @@ class Regions(BaseController):
         Source feature related queries.
     """
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def sequence(self, uniqueName, start, end):
         """
             Returns the sequence of a source feature.
@@ -1552,7 +1552,7 @@ class Regions(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def locations(self, region, start, end, exclude = []):
         """
            Returns a list of features that are located in between the start and end positions of the region.
@@ -1562,7 +1562,7 @@ class Regions(BaseController):
         
         
         regionID = self.queries.getFeatureID(region)
-        exclude = ropy.server.to_array(exclude)
+        exclude = ropy.to_array(exclude)
         
         # trying to speed up the boundary query by determining the types in advance
         gene_types = self.queries.getCvtermID("sequence", ["gene", "pseudogene"])
@@ -1609,14 +1609,14 @@ class Regions(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def featureloc(self, uniqueName, start, end, relationships = [], flattened=False):
         """
             Returns information about all the features located on a source feature within min and max boundaries.
         """
         
-        flattened = ropy.server.to_bool(flattened)
-        relationships = ropy.server.to_array(relationships)
+        flattened = ropy.to_bool(flattened)
+        relationships = ropy.to_array(relationships)
         
         if len(relationships) == 0: 
             relationships = ["part_of", "derives_from"]
@@ -1629,7 +1629,7 @@ class Regions(BaseController):
         relationship_ids = self._get_relationship_ids(relationships)
         
         if len(relationship_ids) == 0:
-            raise ropy.server.ServerException("Could not find any cvterms " + str(relationships) + " in the relationship cv.", ropy.server.ERROR_CODES["DATA_NOT_FOUND"])
+            raise ropy.ServerException("Could not find any cvterms " + str(relationships) + " in the relationship cv.", ropy.ERROR_CODES["DATA_NOT_FOUND"])
         
         # logger.debug(relationships)
         # logger.debug(relationship_ids)
@@ -1749,7 +1749,7 @@ class Regions(BaseController):
     }
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def featurelocwithnamelike(self, uniqueName, start, end, term):
         regionID = self.queries.getFeatureID(uniqueName)
         return {
@@ -1766,7 +1766,7 @@ class Regions(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def inorganism(self, organism, filter = None, offset = None, limit = None):
         """
             Returns a list of top level regions for an organism (e.g. chromosomes, contigs etc.).
@@ -1798,7 +1798,7 @@ class Regions(BaseController):
     # use example of how to make an alchemy controller...
     # @cherrypy.expose
     #     def test(self):
-    #         from ropy.alchemy.sqlalchemy_tool import session
+    #         from alchemy.sqlalchemy_tool import session
     #         dbs = session.query(Db)
     #         s = []
     #         for db in dbs:
@@ -1813,7 +1813,7 @@ class Organisms(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def changes(self, since):
         """
             Reports all the organisms, their taxononmyIDs and a count of how many features have changed since a certain date.
@@ -1850,7 +1850,7 @@ class Organisms(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def list(self):
         """
             Lists all organisms and their taxonomyIDs. 
@@ -1872,7 +1872,7 @@ class Organisms(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def properties(self, organism, vocabulary = None, term = None):
         """
             Lists properties for an organism, with the option of restricting on the controlled vocbulary term.
@@ -1983,7 +1983,7 @@ class Sams(BaseController):
             self.sam = Sam()
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def list(self):
         """
            Returns a list of SAM / BAM files in the repository. 
@@ -2003,7 +2003,7 @@ class Sams(BaseController):
     
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def listfororganism(self, organism):
         """
            Returns a list of SAM / BAM files for a particular organism.
@@ -2042,7 +2042,7 @@ class Sams(BaseController):
         from threading import Lock 
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def header(self, fileID):
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
@@ -2069,7 +2069,7 @@ class Sams(BaseController):
         
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def sequences(self, fileID):
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
@@ -2101,7 +2101,7 @@ class Sams(BaseController):
         
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"], filter=0):
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
@@ -2114,11 +2114,11 @@ class Sams(BaseController):
             
             start = int(start)
             end = int(end)
-            contained = ropy.server.to_bool(contained)
+            contained = ropy.to_bool(contained)
             fileID = int(fileID)
             filter = int(filter)
             
-            properties = ropy.server.to_array(properties)
+            properties = ropy.to_array(properties)
             
             
             data = {
@@ -2165,7 +2165,7 @@ class Sams(BaseController):
         
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def coverage(self, fileID, sequence, start, end, window): 
             """
                Computes the coverage count for a range, windowed in steps.
@@ -2222,7 +2222,7 @@ class Sams(BaseController):
         
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def header(self, fileID):
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
@@ -2257,7 +2257,7 @@ class Sams(BaseController):
         
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def sequences(self, fileID):
             """
                Returns the header attributes for a particular SAM or BAM in the repository.
@@ -2288,7 +2288,7 @@ class Sams(BaseController):
         sequences.arguments = {"fileID" : "the fileID of the SAM or BAM."}
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def query(self, fileID, sequence, start, end, contained = True, properties = ["alignmentStart", "alignmentEnd", "flags", "readName"], filter = 0 ):
             
             import datetime
@@ -2298,7 +2298,7 @@ class Sams(BaseController):
             
             start = int(start)
             end = int(end)
-            contained = ropy.server.to_bool(contained)
+            contained = ropy.to_bool(contained)
             fileID = int(fileID)
             filter = int(filter)
             
@@ -2318,7 +2318,7 @@ class Sams(BaseController):
             
             logger.debug(data)
             
-            properties = ropy.server.to_array(properties)
+            properties = ropy.to_array(properties)
             privates = ["__init__", "default"]
             
             import inspect
@@ -2381,7 +2381,7 @@ class Sams(BaseController):
         }
         
         @cherrypy.expose
-        @ropy.server.service_format()
+        @ropy.service_format()
         def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
             """
                Computes the coverage count for a range, windowed in steps.
@@ -2547,7 +2547,7 @@ class Testing(BaseController):
     """
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def forceclose(self):
         """
             Forces the connection to be closed for testing.
@@ -2563,7 +2563,7 @@ class Testing(BaseController):
     forceclose.arguments = {}
     
     @cherrypy.expose
-    @ropy.server.service_format()
+    @ropy.service_format()
     def test(self):
         """
             Runs a query.
