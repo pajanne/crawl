@@ -87,8 +87,8 @@ def main():
     root.histories = api.controllers.Histories()
     root.terms = api.controllers.Terms()
     
-    if hasattr(config, "file_store_config"):
-        root.sams = api.controllers.Sams(config.file_store_config)
+    if hasattr(config, "alignments"):
+        root.sams = api.controllers.Sams(config.alignments)
     
     if sys.platform[:4] != 'java':
         # currently the graph module depends on numpy
