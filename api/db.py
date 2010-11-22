@@ -251,6 +251,14 @@ class Queries(QueryProcessor):
         
         return self.runQueryStringAndMakeDictionary(query_string, args)
     
+    def getOrganismFromID(self, id):
+        result = self.runQueryStringAndMakeDictionary(
+            "SELECT * FROM organism WHERE organism.organism_id = %(id)s", 
+            {"id" : id})
+        if len(result) > 0:
+            return result[0]
+        raise ServerException("Could not find organism with common_name " + common_name, ERROR_CODES["DATA_NOT_FOUND"])
+    
     def getOrganismIDFromCommonName(self, common_name):
         result = self.runQueryStringAndMakeDictionary(
             "SELECT organism_id FROM organism WHERE organism.common_name = %(common_name)s", 

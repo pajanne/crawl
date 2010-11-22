@@ -2010,11 +2010,13 @@ class Sams(BaseController):
         """
         organism_id = self.getOrganismID(organism)
         
+        organism_details = self.queries.getOrganismFromID(organism_id)
+        
         matching_alignments = []
         for fileID in range(len(self.alignment_store.alignments)):
             alignment = self.alignment_store.alignments[fileID]
             
-            if alignment["organismID"] == organism_id:
+            if alignment["organism"] == organism_details["common_name"]:
                 matching_alignments.append(alignment)
                 
         files = self.alignment_store.list_files(matching_alignments)
