@@ -1910,8 +1910,15 @@ class AlignmentStore(object):
         
         for fileID in range(len(self.alignments)):
             alignment = self.alignments[fileID]
+            
+            """
+                We set the fileID into the alignment itself. Rhis is done because list_files can be given
+                subsets of the self.alignments, and won't their real fileIDs any other way. 
+            """
+            alignment["fileID"] = fileID
+            
             path = alignment["file"]
-            logger.debug("Alignment: " + path)
+            logger.debug("Alignment %s: %s"  % (fileID, path))
             path_elements = path.split("/")
             
             for element in path_elements:
@@ -1927,12 +1934,14 @@ class AlignmentStore(object):
     def get_reader(self, fileID):
         
         fileID = int(fileID)
-
+        
         if fileID < len(self.alignments):
             alignment = self.alignments[fileID]
-
+            
             if "reader" not in alignment:
+                
                 logger.info("Making a new reader for %s %s... " % (fileID, alignment["file"]))
+                
                 if sys.platform[:4] == 'java':
                     
                     import net.sf.samtools.SAMFileReader as SAMFileReader
@@ -1950,13 +1959,12 @@ class AlignmentStore(object):
 
     def list_files (self, alignments):
         files = []
-
-        for fileID in range(len(alignments)):
-            alignment = alignments[fileID]
+        
+        for alignment in alignments:
             path = alignment["file"]
             meta = self._get_meta(path)
-            files.append({ "fileID" : fileID, "path" : path, "meta" : meta })
-
+            files.append({ "fileID" : alignment["fileID"], "path" : path, "meta" : meta })
+        
         return files
 
     def _get_meta(self, path):
@@ -1988,16 +1996,16 @@ class Sams(BaseController):
         """
            Returns a list of SAM / BAM files in the repository. 
         """
-
+        
         files = self.alignment_store.list_files(self.alignment_store.alignments)
-
+        
         data = {
            "response" : {
                "name" : "sams/list",
                "files" : files
            }
         }
-
+        
         return data
     list.arguments = {}
     
@@ -2009,17 +2017,16 @@ class Sams(BaseController):
            Returns a list of SAM / BAM files for a particular organism.
         """
         organism_id = self.getOrganismID(organism)
-        
         organism_details = self.queries.getOrganismFromID(organism_id)
         
         matching_alignments = []
-        for fileID in range(len(self.alignment_store.alignments)):
-            alignment = self.alignment_store.alignments[fileID]
-            
+        
+        for alignment in self.alignment_store.alignments:
             if alignment["organism"] == organism_details["common_name"]:
                 matching_alignments.append(alignment)
-                
+            
         files = self.alignment_store.list_files(matching_alignments)
+        
         
         return {
            "response" : {

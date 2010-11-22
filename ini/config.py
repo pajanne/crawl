@@ -12,6 +12,6 @@ crawl = {
 }
 
 
-alignments="/Users/gv1/Documents/Code/alignments.json"
+alignments="./ini/alignments.json"
 
 

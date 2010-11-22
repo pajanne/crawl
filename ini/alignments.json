@@ -1,0 +1,17 @@
+[
+    {
+        "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2-Staph_aureus_MRSA252_small/test.bam",
+        "organism" : "test", 
+        "chromosomes" : []
+    },
+    {
+        "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2_11-Staph_aureus_MRSA252/maq/raw.bam",
+        "organism" : "Saureus_MRSA252", 
+        "chromosomes" : []
+    },
+    {
+        "file" : "/Users/gv1/Documents/Data/heirarchy/4415_2_12-Staph_aureus_MRSA252/maq/raw.bam",
+        "organism" : "Saureus_MRSA252", 
+        "chromosomes" : []
+    }
+]
