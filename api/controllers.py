@@ -1523,11 +1523,11 @@ class Regions(BaseController):
         """
         rows = self.queries.getRegionSequence(uniqueName)
         row = rows[0]
-
+        
         length = row["length"]
         dna = row["dna"]
         dna = dna[int(start)-1:int(end)-1]
-
+        
         data = {
             "response" : {
                 "name" : "regions/sequence",
@@ -2175,7 +2175,7 @@ class Sams(BaseController):
         
         @cherrypy.expose
         @ropy.service_format()
-        def coverage(self, fileID, sequence, start, end, window): 
+        def coverage(self, fileID, sequence, start, end, window, filter=0): 
             """
                Computes the coverage count for a range, windowed in steps.
             """
@@ -2202,7 +2202,7 @@ class Sams(BaseController):
             
             if file_reader is not None:
                 
-                mappedCoverage = self.sam.coverage(file_reader, sequence, start, end, window)
+                mappedCoverage = self.sam.coverage(file_reader, sequence, start, end, window, filter)
                 
                 data["response"]["coverage"] = mappedCoverage.coverage.tolist()
                 data["response"]["max"] = mappedCoverage.max
@@ -2391,7 +2391,7 @@ class Sams(BaseController):
         
         @cherrypy.expose
         @ropy.service_format()
-        def coverage(self, fileID, sequence, start, end, window): # , display_coordinates = False
+        def coverage(self, fileID, sequence, start, end, window, filter=0): # , display_coordinates = False
             """
                Computes the coverage count for a range, windowed in steps.
             """
@@ -2442,7 +2442,19 @@ class Sams(BaseController):
                         if bin < 0 or bin > (n_bins - 1):
                             continue
                         
-                        cov = pileupcolumn.n
+                        
+                        cov = 0
+                        
+                        # only walk through the reads if you need to filter
+                        if filter > 0:
+                            for pileupread in pileupcolumn.pileups:
+                                aligned_read = pileupread.alignment
+                                if (aligned_read.flag & filter) > 0:
+                                    continue
+                                cov += 1
+                        else:
+                            cov = pileupcolumn.n
+                            
                         
                         coverage[bin] += cov
                         
