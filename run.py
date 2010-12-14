@@ -147,8 +147,7 @@ def main():
     cherrypy.engine.subscribe('stop_thread', close_connection)
     
     # import the tools before starting the server
-    # import ropy.alchemy.sqlalchemy_tool
-    import ropy.psy.psycopg2_tool #@UnusedImport
+    from api import psycopg2_tool #@UnusedImport
     
     if sys.platform[:4] == 'java':
         cherrypy.config.update({'server.nodelay': False})
