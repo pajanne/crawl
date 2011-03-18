@@ -728,7 +728,7 @@ class Features(BaseController):
     }
     
     
-    def _parse_feature_cvterms(self, results):
+    def _parse_feature_cvterms(self, results, pubs = False, dbxrefs = False):
         to_return = []
         feature_store = {}
         cvterm_store = {}
@@ -745,18 +745,23 @@ class Features(BaseController):
                 cvterm_store_key = result["feature"] + result["cvterm"]
                 
                 if cvterm_store_key not in cvterm_store:
-                    cvterm_store[cvterm_store_key] = {
+                    term_to_store = {
                         "cvterm" : result["cvterm"],
                         "cv" : result["cv"],
                         "is_not" : result["is_not"],
                         "accession" : result["accession"],
-                        "props" : [],
-                        "pubs": self.queries.getFeatureCVTermPub(result["feature_cvterm_id"]),
-                        "dbxrefs" : self.queries.getFeatureCVTermDbxrefs(result["feature_cvterm_id"])
+                        "props" : []
                     }
                     
+                    if pubs is True:
+                        term_to_store["pubs"] = self.queries.getFeatureCVTermPub(result["feature_cvterm_id"])
                     
-                    feature_store[result["feature"]]["terms"].append(cvterm_store[cvterm_store_key])
+                    if dbxrefs is True:
+                        term_to_store ["dbxrefs"] = self.queries.getFeatureCVTermDbxrefs(result["feature_cvterm_id"])
+                    
+                    # store the term
+                    cvterm_store[cvterm_store_key] = term_to_store
+                    feature_store[result["feature"]]["terms"].append(term_to_store)
                 
                 if "prop" in result and result["prop"] != "None":
                     cvterm_store[cvterm_store_key]["props"].append ({
@@ -771,18 +776,20 @@ class Features(BaseController):
     
     @cherrypy.expose
     @ropy.service_format()
-    def terms(self, features, controlled_vocabularies = []):
+    def terms(self, features, pubs = False, dbxrefs = False, controlled_vocabularies = []):
         """
             Returns cvterms of type cv_names associated with list of features.
         """
         
         features = ropy.to_array(features)
         controlled_vocabularies = ropy.to_array(controlled_vocabularies)
+        pubs = ropy.to_bool(pubs)
+        dbxrefs = ropy.to_bool(dbxrefs)
         
         logger.debug(features)
         logger.debug(controlled_vocabularies)
         
-        results = self._parse_feature_cvterms(self.queries.getFeatureCVTerm(features, controlled_vocabularies))
+        results = self._parse_feature_cvterms(self.queries.getFeatureCVTerm(features, controlled_vocabularies), pubs, dbxrefs)
         
         data = {
             "response" : {
@@ -793,7 +800,9 @@ class Features(BaseController):
         return data
     terms.arguments = { 
         "features" : "the uniquenames of the features", 
-        "controlled_vocabularies": "the names of the controlled vocabularies" 
+        "controlled_vocabularies": "the names of the controlled vocabularies",
+        "pubs" : "to include pubs in the output (default false)",
+        "dbxrefs" : "to include dbxrefs in the output (default false)",
     }
     
     @cherrypy.expose
