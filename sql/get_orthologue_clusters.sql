@@ -10,7 +10,13 @@ a.analysis_id,
 a.name, 
 description, 
 program, programversion, algorithm, sourcename, sourceversion,sourceuri, timeexecuted,
-organismprop.value as subject_taxonID
+organismprop.value as subject_taxonID,
+ARRAY (
+    SELECT fcc.name from feature_cvterm fc 
+    JOIN cvterm fcc ON fc.cvterm_id = fcc.cvterm_id 
+    JOIN cv fccc ON fccc.cv_id = fcc.cv_id AND fccc.name = 'genedb_products' 
+    WHERE fc.feature_id = orthof.feature_id 
+) as orthoproduct
 
 FROM feature f
 
