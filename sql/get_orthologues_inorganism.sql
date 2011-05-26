@@ -11,7 +11,13 @@ SELECT
         JOIN cvterm fcc ON fc.cvterm_id = fcc.cvterm_id 
         JOIN cv fccc ON fccc.cv_id = fcc.cv_id AND fccc.name = 'genedb_products' 
         WHERE fc.feature_id = orthof.feature_id 
-    ) as orthoproduct
+    ) as orthoproduct,
+    ARRAY (
+        SELECT fcc.name from feature_cvterm fc 
+        JOIN cvterm fcc ON fc.cvterm_id = fcc.cvterm_id 
+        JOIN cv fccc ON fccc.cv_id = fcc.cv_id AND fccc.name = 'genedb_products' 
+        WHERE fc.feature_id = f.feature_id 
+    ) as product
 FROM feature f
 JOIN feature_relationship fr ON f.feature_id = fr.subject_id 
     AND fr.type_id in 
